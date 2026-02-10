@@ -31,4 +31,16 @@ class VehiculoResponsable extends Model
     {
         return $this->belongsTo(User::class, 'responsable_user_id', 'id');
     }
+
+    protected static function booted()
+    {
+        static::creating(function ($registro) {
+            static::where('vehiculo_id', $registro->vehiculo_id)
+                ->where('activo', true)
+                ->update([
+                    'activo' => false,
+                    'fecha_fin' => now(),
+                ]);
+        });
+    }
 }

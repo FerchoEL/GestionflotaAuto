@@ -12,7 +12,9 @@ class Vehiculo extends Model
         'departamento_id',
         'localidad_id',
         'estatus_id',
-        'numero_economico',
+        'tipo_combustible',
+        'transmision',
+        'centro_costo',
         'placas',
         'vin',
         'marca',
@@ -25,7 +27,7 @@ class Vehiculo extends Model
         'activo',
     ];
     
-   public function tipo()
+    public function tipoVehiculo()
     {
         return $this->belongsTo(TipoVehiculo::class, 'tipo_vehiculo_id', 'id');
     }
@@ -80,6 +82,12 @@ class Vehiculo extends Model
     {
         return $this->hasMany(VehiculoFondeoConfig::class, 'vehiculo_id', 'id');
     }
+
+    public function centroCosto()
+    {
+        return $this->belongsTo(CentroCosto::class, 'centro_costo_id');
+    }
+
 
 }
 

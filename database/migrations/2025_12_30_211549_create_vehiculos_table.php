@@ -22,8 +22,12 @@ return new class extends Migration
             $table->unsignedBigInteger('departamento_id')->nullable();
             $table->unsignedBigInteger('localidad_id')->nullable();
             $table->unsignedBigInteger('estatus_id');
+            $table->unsignedBigInteger('centro_costo_id')->nullable();
+            
+            $table->enum('tipo_combustible', ['gasolina', 'diesel'])->nullable();
+            $table->enum('transmision', ['manual', 'automatica'])->nullable();
 
-            $table->string('numero_economico')->nullable()->unique();
+            $table->string('centro_costo')->nullable();
             $table->string('placas')->unique();
             $table->string('vin')->nullable()->unique();
 
@@ -44,6 +48,7 @@ return new class extends Migration
             $table->foreign('departamento_id')->references('id')->on('departamentos');
             $table->foreign('localidad_id')->references('id')->on('localidades');
             $table->foreign('estatus_id')->references('id')->on('vehiculo_estatus');
+            $table->foreign('centro_costo_id')->references('id')->on('centros_costo');
         });
     }
 

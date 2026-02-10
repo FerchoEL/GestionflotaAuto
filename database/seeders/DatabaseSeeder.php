@@ -20,6 +20,7 @@ class DatabaseSeeder extends Seeder
             VehiculoEstatusSeeder::class,
             ParametroSistemaSeeder::class,
             MotivoAuditoriaSeeder::class,
-        ]);clearstatcache
+            RoleSeeder::class,
+        ]);
     }
 }

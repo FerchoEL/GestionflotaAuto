@@ -12,6 +12,9 @@ class VehiculoEstatus extends Model
         'nombre',
         'activo',
     ];
+    protected $casts = [
+        'activo' => 'boolean',
+    ];
 
     public function vehiculos()
     {

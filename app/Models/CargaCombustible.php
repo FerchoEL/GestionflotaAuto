@@ -10,7 +10,7 @@ class CargaCombustible extends Model
 
     protected $fillable = [
         'vehiculo_id',
-        'chofer_user_id',
+        'user_id',
         'fecha_carga',
         'km_odometro',
         'litros',
@@ -21,6 +21,8 @@ class CargaCombustible extends Model
 
     protected $casts = [
         'fecha_carga' => 'datetime',
+        'litros' => 'decimal:2',
+        'importe' => 'decimal:2',
     ];
 
     public function vehiculo()
@@ -28,9 +30,9 @@ class CargaCombustible extends Model
         return $this->belongsTo(Vehiculo::class, 'vehiculo_id', 'id');
     }
 
-    public function chofer()
+    public function usuario()
     {
-        return $this->belongsTo(User::class, 'chofer_user_id', 'id');
+        return $this->belongsTo(User::class, 'user_id', 'id');
     }
 
     public function rendimiento()

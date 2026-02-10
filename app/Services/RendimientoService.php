@@ -11,11 +11,16 @@ use Illuminate\Support\Facades\DB;
 class RendimientoService
 {
     /**
-     * Procesa una carga de combustible y calcula el rendimiento
+     * Procesa una carga de combustible y calcula el rendimiento.
      */
     public function procesarCarga(CargaCombustible $carga): void
     {
         DB::transaction(function () use ($carga) {
+
+            // Evitar reprocesos: si ya existe rendimiento para esta carga, no duplicar
+            if (Rendimiento::where('carga_id', $carga->id)->exists()) {
+                return;
+            }
 
             // Buscar la carga anterior del mismo vehículo
             $cargaAnterior = CargaCombustible::where('vehiculo_id', $carga->vehiculo_id)
@@ -69,11 +74,21 @@ class RendimientoService
             $umbralMinimo = $vehiculo->rendimiento_optimo_km_l * (1 - ($tolerancia / 100));
 
             if ($rendimiento < $umbralMinimo) {
+
+                // Evitar alertas duplicadas por la misma carga
+                if (AlertaRendimiento::where('carga_id', $carga->id)->exists()) {
+                    return;
+                }
+
+                // Responsable vigente: ordenar por fecha_inicio
+                $responsableActivo = $vehiculo->responsables()
+                    ->where('activo', true)
+                    ->orderByDesc('fecha_inicio')
+                    ->first();
+
                 AlertaRendimiento::create([
                     'vehiculo_id' => $vehiculo->id,
-                    'responsable_user_id' => optional(
-                        $vehiculo->responsables()->where('activo', true)->latest()->first()
-                    )->responsable_user_id,
+                    'responsable_user_id' => optional($responsableActivo)->responsable_user_id,
                     'carga_id' => $carga->id,
                     'rendimiento_detectado' => $rendimiento,
                     'rendimiento_optimo' => $vehiculo->rendimiento_optimo_km_l,

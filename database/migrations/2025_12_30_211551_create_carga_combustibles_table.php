@@ -14,10 +14,11 @@ return new class extends Migration
         Schema::create('carga_combustibles', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('vehiculo_id');
-            $table->unsignedBigInteger('chofer_user_id');
+            
+            $table->unsignedBigInteger('user_id'); // operador (chofer o responsable)
 
             $table->foreign('vehiculo_id')->references('id')->on('vehiculos');
-            $table->foreign('chofer_user_id')->references('id')->on('users');
+            $table->foreign('user_id')->references('id')->on('users');
             $table->dateTime('fecha_carga');
             $table->unsignedInteger('km_odometro');
             $table->decimal('litros', 10, 2);
@@ -25,6 +26,8 @@ return new class extends Migration
 
             $table->string('foto_odometro_path');
             $table->string('foto_ticket_path');
+             // Índice para consultas por vehículo y fecha
+            $table->index(['vehiculo_id', 'fecha_carga']);
 
             $table->timestamps();
         });
