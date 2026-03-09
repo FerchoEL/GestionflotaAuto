@@ -11,18 +11,14 @@ return new class extends Migration
      */
     public function up(): void
     {
-         Schema::create('fondeos', function (Blueprint $table) {
+        Schema::create('alerta_fondeos', function (Blueprint $table) {
             $table->id();
 
             $table->unsignedBigInteger('vehiculo_id');
-            $table->unsignedBigInteger('fondeado_por_user_id')->nullable();
+            $table->unsignedBigInteger('fondeo_id')->nullable();
 
-            $table->decimal('litros_fondeados', 10, 2);
-            $table->decimal('importe_fondeado', 12, 2)->nullable();
-
-            $table->dateTime('fecha_fondeado');
-
-            $table->string('comentario')->nullable();
+            $table->string('tipo'); // SOBRE_FONDEO
+            $table->text('descripcion')->nullable();
 
             $table->timestamps();
 
@@ -31,12 +27,10 @@ return new class extends Migration
                 ->on('vehiculos')
                 ->cascadeOnDelete();
 
-            $table->foreign('fondeado_por_user_id')
+            $table->foreign('fondeo_id')
                 ->references('id')
-                ->on('users')
-                ->nullOnDelete();
-
-            $table->index(['vehiculo_id', 'fecha_fondeado']);
+                ->on('fondeos')
+                ->cascadeOnDelete();
         });
     }
 
@@ -45,6 +39,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('fondeos');
+        Schema::dropIfExists('alerta_fondeos');
     }
 };

@@ -12,6 +12,9 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use App\Models\User;
+use Illuminate\Validation\Rule;
+
 
 class VehiculoResource extends Resource
 {
@@ -60,8 +63,30 @@ class VehiculoResource extends Resource
                     ->searchable()
                     ->preload()
                     ->nullable(),
-                Forms\Components\TextInput::make('placas')->required(),
-                Forms\Components\TextInput::make('vin'),
+                Forms\Components\TextInput::make('placas')
+                    ->required()
+                    ->maxLength(8)
+                    ->live(onBlur: true) // 🔥 valida al salir del campo
+                    ->unique(
+                        table: Vehiculo::class,
+                        column: 'placas',
+                        ignoreRecord: true
+                    )
+                     ->validationMessages([
+                        'unique' => 'Esta placa ya está registrada.',
+                    ]),
+                Forms\Components\TextInput::make('vin')
+                    ->required()
+                    ->maxLength(17)
+                    ->live(onBlur: true)
+                    ->unique(
+                        table: Vehiculo::class,
+                        column: 'vin',
+                        ignoreRecord: true
+                    ) 
+                    ->validationMessages([
+                        'unique' => 'Este VIN ya está registrado.',
+                    ]),
 
                 Forms\Components\TextInput::make('marca')->required(),
                 Forms\Components\TextInput::make('modelo')->required(),
@@ -71,6 +96,11 @@ class VehiculoResource extends Resource
                 Forms\Components\TextInput::make('capacidad_tanque_litros')->numeric(),
                 Forms\Components\TextInput::make('rendimiento_optimo_km_l')->numeric()->required(),
                 Forms\Components\TextInput::make('tolerancia_pct')->numeric(),
+                Forms\Components\Select::make('responsable_user_id')
+                ->label('Responsable del vehículo')
+                ->options(User::role('responsable')->pluck('name', 'id'))
+                ->required(),
+
             ]);
     }
 
@@ -88,6 +118,7 @@ class VehiculoResource extends Resource
                 Tables\Columns\TextColumn::make('modelo'),
                 Tables\Columns\TextColumn::make('tipoVehiculo.nombre')->label('Tipo'),
                 Tables\Columns\TextColumn::make('estatus.nombre')->label('Estatus'),
+                
             ])
             ->filters([
                 //

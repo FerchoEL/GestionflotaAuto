@@ -56,6 +56,12 @@ class Vehiculo extends Model
     {
         return $this->hasMany(VehiculoResponsable::class, 'vehiculo_id', 'id');
     }
+    public function responsableActivo()
+    {
+        return $this->hasOne(VehiculoResponsable::class)
+            ->where('activo', true)
+            ->orderByDesc('fecha_inicio');
+    }
 
     public function cargas()
     {

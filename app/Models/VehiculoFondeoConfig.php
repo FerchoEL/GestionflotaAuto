@@ -6,25 +6,24 @@ use Illuminate\Database\Eloquent\Model;
 
 class VehiculoFondeoConfig extends Model
 {
-    protected $table = 'vehiculo_fondeo_configs';
-
     protected $fillable = [
         'vehiculo_id',
-        'litros_autorizados_semanales',
+        'litros_asignados',
         'activo',
-        'fecha_inicio',
-        'fecha_fin',
-        'comentario',
+        'asignado_por_user_id',
     ];
 
     protected $casts = [
         'activo' => 'boolean',
-        'fecha_inicio' => 'date',
-        'fecha_fin' => 'date',
     ];
 
     public function vehiculo()
     {
-        return $this->belongsTo(Vehiculo::class, 'vehiculo_id', 'id');
+        return $this->belongsTo(Vehiculo::class);
+    }
+
+    public function asignadoPor()
+    {
+        return $this->belongsTo(User::class, 'asignado_por_user_id');
     }
 }

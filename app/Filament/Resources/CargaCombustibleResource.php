@@ -13,6 +13,10 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Illuminate\Support\Facades\Auth;
+use App\Models\Vehiculo;
+use App\Models\VehiculoChofer;
+use App\Models\VehiculoResponsable;
+
 
 class CargaCombustibleResource extends Resource
 {
@@ -28,8 +32,15 @@ class CargaCombustibleResource extends Resource
                 ->options(function () {
                     $user = Auth::user();
 
+                    // 🔴 SOLO vehículos que tengan responsable activo
+                    $queryBase = Vehiculo::whereHas('responsables', function ($q) {
+                        $q->where('activo', true);
+                    });
+
                     if ($user->hasAnyRole(['admin', 'activos', 'administracion'])) {
-                        return Vehiculo::query()->orderBy('placas')->pluck('placas', 'id');
+                        return $queryBase
+                            ->orderBy('placas')
+                            ->pluck('placas', 'id');
                     }
 
                     $idsChofer = VehiculoChofer::where('chofer_user_id', $user->id)
@@ -42,7 +53,10 @@ class CargaCombustibleResource extends Resource
 
                     $ids = $idsChofer->merge($idsResp)->unique()->values();
 
-                    return Vehiculo::whereIn('id', $ids)->orderBy('placas')->pluck('placas', 'id');
+                    return $queryBase
+                        ->whereIn('id', $ids)
+                        ->orderBy('placas')
+                        ->pluck('placas', 'id');
                 })
                 ->searchable()
                 ->required(),
@@ -50,7 +64,10 @@ class CargaCombustibleResource extends Resource
             Forms\Components\DateTimePicker::make('fecha_carga')
                 ->label('Fecha de carga')
                 ->default(now())
-                ->required(),
+                ->required()
+                ->native(false)
+                ->displayFormat('d/m/Y h:i A')
+                ->format('Y-m-d H:i:s'),
 
             Forms\Components\TextInput::make('km_odometro')
                 ->label('Kilometraje (odómetro)')
@@ -79,19 +96,24 @@ class CargaCombustibleResource extends Resource
             Forms\Components\TextInput::make('importe')
                 ->numeric()
                 ->label('Importe (opcional)')
+                ->dehydrateStateUsing(fn ($state) => $state === '' ? null : $state)
                 ->nullable(),
 
             Forms\Components\FileUpload::make('foto_odometro_path')
                 ->label('Foto odómetro')
                 ->image()
                 ->required()
-                ->directory('cargas/odometro'),
+                ->disk('public')
+                ->directory('cargas/odometro')
+                ->maxSize(5120),
 
             Forms\Components\FileUpload::make('foto_ticket_path')
                 ->label('Foto ticket')
                 ->image()
                 ->required()
-                ->directory('cargas/ticket'),
+                ->disk('public')
+                ->directory('cargas/ticket')
+                ->maxSize(5120),
         ]);
     }
 

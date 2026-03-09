@@ -19,6 +19,7 @@ class AlertaRendimiento extends Model
         'motivo_auditoria_id',
         'fecha_alerta',
         'fecha_cierre',
+        'comentario',
     ];
 
     protected $casts = [

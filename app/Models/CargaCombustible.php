@@ -39,5 +39,17 @@ class CargaCombustible extends Model
     {
         return $this->hasOne(Rendimiento::class, 'carga_id', 'id');
     }
+    /* protected static function booted()
+    {
+        static::creating(function ($carga) {
+            $vehiculo = $carga->vehiculo;
+
+            if (! $vehiculo || ! $vehiculo->responsables()->where('activo', true)->exists()) {
+                throw new \Exception(
+                    'No se puede registrar una carga para un vehículo sin responsable activo.'
+                );
+            }
+        });
+    } */
 }
 
