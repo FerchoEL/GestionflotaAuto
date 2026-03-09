@@ -12,6 +12,7 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Illuminate\Database\Eloquent\Model;
 
 class TipoVehiculoResource extends Resource
 {
@@ -60,6 +61,21 @@ class TipoVehiculoResource extends Resource
     public static function canViewAny(): bool
     {
         return auth()->user()->hasAnyRole(['admin', 'activos']);
+    }
+
+    public static function canCreate(): bool
+    {
+        return auth()->user()->hasAnyRole(['admin', 'activos']);
+    }
+
+    public static function canEdit(Model $record): bool
+    {
+        return auth()->user()->hasAnyRole(['admin', 'activos']);
+    }
+
+    public static function canDelete(Model $record): bool
+    {
+        return auth()->user()->hasRole('admin');
     }
 
     public static function getPages(): array

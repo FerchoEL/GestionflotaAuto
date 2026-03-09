@@ -14,7 +14,7 @@ class Vehiculo extends Model
         'estatus_id',
         'tipo_combustible',
         'transmision',
-        'centro_costo',
+        
         'placas',
         'vin',
         'marca',
@@ -32,7 +32,7 @@ class Vehiculo extends Model
         return $this->belongsTo(TipoVehiculo::class, 'tipo_vehiculo_id', 'id');
     }
 
-    public function departamento()
+    /* public function departamento()
     {
         return $this->belongsTo(Departamento::class, 'departamento_id', 'id');
     }
@@ -40,7 +40,7 @@ class Vehiculo extends Model
     public function localidad()
     {
         return $this->belongsTo(Localidad::class, 'localidad_id', 'id');
-    }
+    } */
 
     public function estatus()
     {
@@ -89,11 +89,42 @@ class Vehiculo extends Model
         return $this->hasMany(VehiculoFondeoConfig::class, 'vehiculo_id', 'id');
     }
 
-    public function centroCosto()
+    
+    public function departamentos()
     {
-        return $this->belongsTo(CentroCosto::class, 'centro_costo_id');
+        return $this->hasMany(VehiculoDepartamento::class);
     }
 
+    public function departamentoActivo()
+    {
+        return $this->hasOne(VehiculoDepartamento::class)
+            ->where('activo', true)
+            ->orderByDesc('fecha_inicio');
+    }
+
+    public function localidades()
+    {
+        return $this->hasMany(VehiculoLocalidad::class);
+    }
+
+    public function localidadActiva()
+    {
+        return $this->hasOne(VehiculoLocalidad::class)
+            ->where('activo', true)
+            ->orderByDesc('fecha_inicio');
+    }
+    public function tarjetas()
+    {
+        return $this->hasMany(VehiculoTarjeta::class);
+    }
+
+    public function tarjetaActiva()
+    {
+        return $this->hasOne(VehiculoTarjeta::class)
+            ->where('activo', true)
+            ->orderByDesc('fecha_inicio')   // ✅ importante
+            ->orderByDesc('id');
+    }
 
 }
 

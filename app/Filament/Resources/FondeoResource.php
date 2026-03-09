@@ -3,115 +3,80 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\FondeoResource\Pages;
-use App\Filament\Resources\FondeoResource\RelationManagers;
 use App\Models\Fondeo;
+use App\Models\Vehiculo;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Illuminate\Database\Eloquent\Model; 
 
 class FondeoResource extends Resource
 {
     protected static ?string $model = Fondeo::class;
-
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?string $navigationIcon = 'heroicon-o-banknotes';
+    protected static ?string $navigationLabel = 'Fondeos';
+    protected static ?string $navigationGroup = 'Administración';
 
     public static function form(Form $form): Form
     {
-        return $form
-            ->schema([
-                Forms\Components\Select::make('vehiculo_id')
-            ->relationship('vehiculo', 'placas')
-            ->disabled()
-            ->required()
-            ->searchable(),
+        return $form->schema([
 
-        Forms\Components\DatePicker::make('semana_inicio')
-            ->disabled()
-            ->required(),
+            Forms\Components\Select::make('vehiculo_id')
+                ->relationship('vehiculo', 'placas')
+                ->required()
+                ->searchable(),
 
-        Forms\Components\DatePicker::make('semana_fin')
-            ->disabled()
-            ->required(),
+            Forms\Components\TextInput::make('litros_fondeados')
+                ->numeric()
+                ->required()
+                ->minValue(0),
 
-        Forms\Components\TextInput::make('litros_consumidos')
-            ->numeric()
-            ->disabled(),
+            Forms\Components\TextInput::make('importe_fondeado')
+                ->numeric()
+                ->required()
+                ->minValue(0),
 
-        Forms\Components\TextInput::make('litros_a_fondear')
-            ->numeric()
-            ->disabled(),
+            Forms\Components\DateTimePicker::make('fecha_fondeado')
+                ->default(now())
+                ->required(),
 
-        Forms\Components\Select::make('estatus')
-            ->options([
-                'Pendiente' => 'Pendiente',
-                'Fondeado' => 'Fondeado',
-            ])
-            ->required()
-            ->reactive(),
+            Forms\Components\Textarea::make('comentario')
+                ->maxLength(255),
 
-        Forms\Components\Textarea::make('comentario')
-            ->maxLength(255),
-
-        Forms\Components\DateTimePicker::make('fecha_fondeado')
-            ->visible(fn ($get) => $get('estatus') === 'Fondeado')
-            ->disabled()
-            ->dehydrated(false),
-            ]);
+        ]);
     }
 
     public static function table(Table $table): Table
     {
         return $table
             ->columns([
+
                 Tables\Columns\TextColumn::make('vehiculo.placas')
-                ->label('Vehículo')
-                ->searchable(),
+                    ->label('Vehículo')
+                    ->searchable(),
 
-                    Tables\Columns\TextColumn::make('semana_inicio')
-                        ->date(),
+                Tables\Columns\TextColumn::make('litros_fondeados')
+                    ->label('Litros Fondeados'),
 
-                    Tables\Columns\TextColumn::make('litros_consumidos'),
+                Tables\Columns\TextColumn::make('importe_fondeado')
+                    ->money('MXN', true),
 
-                    Tables\Columns\TextColumn::make('litros_a_fondear'),
+                Tables\Columns\TextColumn::make('fecha_fondeado')
+                    ->dateTime(),
 
-                    Tables\Columns\BadgeColumn::make('estatus')
-                        ->colors([
-                            'warning' => 'Pendiente',
-                            'success' => 'Fondeado',
-                        ]),
+                Tables\Columns\TextColumn::make('fondeadoPor.name')
+                    ->label('Registrado por'),
+
             ])
-            
-            ->filters([
-                //
-            ])
+            ->defaultSort('fecha_fondeado', 'desc')
             ->actions([
                 Tables\Actions\EditAction::make(),
-                Tables\Actions\Action::make('fondear')
-                ->visible(fn ($record) => $record->estatus === 'Pendiente')
-                ->action(function ($record) {
-                    $record->update([
-                        'estatus' => 'Fondeado',
-                        'fondeado_por_user_id' => auth()->id(),
-                        'fecha_fondeado' => now(),
-                    ]);
-                })
             ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
-                ]),
+                Tables\Actions\DeleteBulkAction::make(),
             ]);
-    }
-
-    public static function getRelations(): array
-    {
-        return [
-            //
-        ];
     }
 
     public static function getPages(): array
@@ -121,5 +86,33 @@ class FondeoResource extends Resource
             'create' => Pages\CreateFondeo::route('/create'),
             'edit' => Pages\EditFondeo::route('/{record}/edit'),
         ];
+    }
+    public static function canViewAny(): bool
+    {
+        return auth()->user()->hasAnyRole([
+            'admin',
+            'fondeo'
+        ]);
+    }
+
+    public static function canCreate(): bool
+    {
+        return auth()->user()->hasAnyRole([
+            'admin',
+            'fondeo'
+        ]);
+    }
+
+    public static function canEdit(Model $record): bool
+    {
+        return auth()->user()->hasAnyRole([
+            'admin',
+            'fondeo'
+        ]);
+    }
+
+    public static function canDelete(Model $record): bool
+    {
+        return auth()->user()->hasRole('admin');
     }
 }

@@ -12,6 +12,7 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Illuminate\Database\Eloquent\Model; 
 
 class AlertaRendimientoResource extends Resource
 {
@@ -115,5 +116,53 @@ class AlertaRendimientoResource extends Resource
             'create' => Pages\CreateAlertaRendimiento::route('/create'),
             'edit' => Pages\EditAlertaRendimiento::route('/{record}/edit'),
         ];
+    }
+
+    public static function canViewAny(): bool
+    {
+        return auth()->user()->hasAnyRole([
+            'admin',
+            'responsable',
+            'activos'
+        ]);
+    }
+
+    public static function canCreate(): bool
+    {
+        return false;
+    }
+
+    public static function canEdit(Model $record): bool
+    {
+        $user = auth()->user();
+
+        if ($user->hasRole('admin')) return true;
+
+        if ($user->hasRole('responsable')) {
+            return $record->responsable_user_id === $user->id;
+        }
+
+        return false;
+    }
+
+    public static function canDelete(Model $record): bool
+    {
+        return auth()->user()->hasRole('admin');
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        $query = parent::getEloquentQuery();
+        $user = auth()->user();
+
+        if ($user->hasRole('admin') || $user->hasRole('activos')) {
+            return $query;
+        }
+
+        if ($user->hasRole('responsable')) {
+            return $query->where('responsable_user_id', $user->id);
+        }
+
+        return $query->whereRaw('1 = 0');
     }
 }

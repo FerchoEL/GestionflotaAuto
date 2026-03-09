@@ -4,7 +4,7 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\CentroCostoResource\Pages;
 use App\Filament\Resources\CentroCostoResource\RelationManagers;
-use App\Models\CentroCosto;
+use App\Models\CuentaAnalitica;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -12,10 +12,11 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Illuminate\Database\Eloquent\Model;
 
 class CentroCostoResource extends Resource
 {
-    protected static ?string $model = CentroCosto::class;
+    protected static ?string $model = CuentaAnalitica::class;
 
     
     protected static ?string $navigationIcon = 'heroicon-o-currency-dollar';
@@ -62,7 +63,22 @@ class CentroCostoResource extends Resource
 
     public static function canViewAny(): bool
     {
-        return auth()->user()->hasAnyRole(['admin', 'activos', 'administracion']);
+        return auth()->user()->hasAnyRole(['admin','activos', 'administracion']);
+    }
+
+    public static function canCreate(): bool
+    {
+        return auth()->user()->hasAnyRole(['admin','activos']);
+    }
+
+    public static function canEdit(\Illuminate\Database\Eloquent\Model $record): bool
+    {
+        return auth()->user()->hasAnyRole(['admin','activos']);
+    }
+
+    public static function canDelete(\Illuminate\Database\Eloquent\Model $record): bool
+    {
+        return auth()->user()->hasRole('admin');
     }
 
     public static function getRelations(): array

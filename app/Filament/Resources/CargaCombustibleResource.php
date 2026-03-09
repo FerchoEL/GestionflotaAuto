@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\Auth;
 use App\Models\Vehiculo;
 use App\Models\VehiculoChofer;
 use App\Models\VehiculoResponsable;
+use Illuminate\Database\Eloquent\Model;
 
 
 class CargaCombustibleResource extends Resource
@@ -28,38 +29,42 @@ class CargaCombustibleResource extends Resource
     {
         return $form->schema([
             Forms\Components\Select::make('vehiculo_id')
-                ->label('Vehículo')
-                ->options(function () {
-                    $user = Auth::user();
+    ->label('Vehículo')
+    ->options(function () {
+        $user = Auth::user();
 
-                    // 🔴 SOLO vehículos que tengan responsable activo
-                    $queryBase = Vehiculo::whereHas('responsables', function ($q) {
-                        $q->where('activo', true);
-                    });
+        // 🔴 SOLO vehículos con responsable activo Y tarjeta activa
+        $queryBase = Vehiculo::query()
+            ->whereHas('responsables', function ($q) {
+                $q->where('activo', true);
+            })
+            ->whereHas('tarjetas', function ($q) {
+                $q->where('activo', true);
+            });
 
-                    if ($user->hasAnyRole(['admin', 'activos', 'administracion'])) {
-                        return $queryBase
-                            ->orderBy('placas')
-                            ->pluck('placas', 'id');
-                    }
+        if ($user->hasAnyRole(['admin', 'activos', 'administracion'])) {
+            return $queryBase
+                ->orderBy('placas')
+                ->pluck('placas', 'id');
+        }
 
-                    $idsChofer = VehiculoChofer::where('chofer_user_id', $user->id)
-                        ->where('activo', true)
-                        ->pluck('vehiculo_id');
+        $idsChofer = VehiculoChofer::where('chofer_user_id', $user->id)
+            ->where('activo', true)
+            ->pluck('vehiculo_id');
 
-                    $idsResp = VehiculoResponsable::where('responsable_user_id', $user->id)
-                        ->where('activo', true)
-                        ->pluck('vehiculo_id');
+        $idsResp = VehiculoResponsable::where('responsable_user_id', $user->id)
+            ->where('activo', true)
+            ->pluck('vehiculo_id');
 
-                    $ids = $idsChofer->merge($idsResp)->unique()->values();
+        $ids = $idsChofer->merge($idsResp)->unique()->values();
 
-                    return $queryBase
-                        ->whereIn('id', $ids)
-                        ->orderBy('placas')
-                        ->pluck('placas', 'id');
-                })
-                ->searchable()
-                ->required(),
+        return $queryBase
+            ->whereIn('id', $ids)
+            ->orderBy('placas')
+            ->pluck('placas', 'id');
+    })
+    ->searchable()
+    ->required(),
 
             Forms\Components\DateTimePicker::make('fecha_carga')
                 ->label('Fecha de carga')
@@ -93,11 +98,29 @@ class CargaCombustibleResource extends Resource
                 ->required()
                 ->rule('gt:0'),
 
+            Forms\Components\TextInput::make('precio_litro')
+            ->numeric()
+            ->required()
+            ->reactive(),
+
             Forms\Components\TextInput::make('importe')
                 ->numeric()
-                ->label('Importe (opcional)')
-                ->dehydrateStateUsing(fn ($state) => $state === '' ? null : $state)
-                ->nullable(),
+                ->disabled()
+                ->dehydrated(false)
+                ->formatStateUsing(function ($get) {
+                    if ($get('litros') && $get('precio_litro')) {
+                        return round($get('litros') * $get('precio_litro'), 2);
+                    }
+                    return 0;
+                }),
+
+            Forms\Components\Select::make('cuenta_analitica_id')
+                ->label('Cuenta Analítica')
+                ->relationship('cuentaAnalitica', 'nombre')
+                ->searchable()
+                ->preload()
+                ->nullable()
+                ->visible(fn () => auth()->user()->hasAnyRole(['admin','responsable'])),
 
             Forms\Components\FileUpload::make('foto_odometro_path')
                 ->label('Foto odómetro')
@@ -150,6 +173,68 @@ class CargaCombustibleResource extends Resource
         return [
             //
         ];
+    }
+    public static function canViewAny(): bool
+    {
+        return auth()->user()->hasAnyRole([
+            'admin',
+            'chofer',
+            'responsable',
+            'activos'
+        ]);
+    }
+
+    public static function canCreate(): bool
+    {
+        return auth()->user()->hasAnyRole([
+            'admin',
+            'chofer'
+        ]);
+    }
+
+    public static function canEdit(Model $record): bool
+    {
+        $user = auth()->user();
+
+        if ($user->hasRole('admin')) return true;
+
+        if ($user->hasRole('responsable')) {
+            return $record->vehiculo->responsableActivo?->responsable_user_id === $user->id;
+        }
+
+        return false;
+    }
+    
+
+    public static function canDelete(Model $record): bool
+    {
+        return auth()->user()->hasRole('admin');
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        $query = parent::getEloquentQuery();
+        $user = auth()->user();
+
+        if ($user->hasRole('admin') || $user->hasRole('activos')) {
+            return $query;
+        }
+
+        if ($user->hasRole('chofer')) {
+            return $query->whereHas('vehiculo.choferes', function ($q) use ($user) {
+                $q->where('chofer_user_id', $user->id)
+                ->where('activo', true);
+            });
+        }
+
+        if ($user->hasRole('responsable')) {
+            return $query->whereHas('vehiculo.responsables', function ($q) use ($user) {
+                $q->where('responsable_user_id', $user->id)
+                ->where('activo', true);
+            });
+        }
+
+        return $query->whereRaw('1 = 0');
     }
 
     public static function getPages(): array

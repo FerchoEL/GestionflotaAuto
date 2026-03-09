@@ -4,9 +4,9 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class CentroCosto extends Model
+class CuentaAnalitica extends Model
 {
-    protected $table = 'centros_costo';
+    protected $table = 'cuenta_analiticas';
 
     protected $fillable = [
         'nombre',
@@ -14,8 +14,8 @@ class CentroCosto extends Model
         'activo',
     ];
 
-    public function vehiculos()
+    public function cargas()
     {
-        return $this->hasMany(Vehiculo::class, 'centro_costo_id');
+        return $this->hasMany(CargaCombustible::class);
     }
 }

@@ -1,0 +1,37 @@
+[90m= [39m[34;4mIlluminate\Database\Eloquent\Collection[39;24m {#7148
+    [34mall[39m: [
+      [34;4mApp\Models\User[39;24m {#1704
+        [34mid[39m: [35m1[39m,
+        [34mname[39m: "[32mAdmin Sistema[39m",
+        [34memail[39m: "[32madmin@flota.test[39m",
+        [34memail_verified_at[39m: [36mnull[39m,
+        #[33mpassword[39m: "[32m$2y$12$9ZTEJqSmkmn2moN0RaRP2OeDywQQc0HQhYtgtXJ5Mj1mbKJQLn7me[39m",
+        #[33mtwo_factor_secret[39m: [36mnull[39m,
+        #[33mtwo_factor_recovery_codes[39m: [36mnull[39m,
+        [34mtwo_factor_confirmed_at[39m: [36mnull[39m,
+        #[33mremember_token[39m: [36mnull[39m,
+        [34mcurrent_team_id[39m: [36mnull[39m,
+        [34mprofile_photo_path[39m: [36mnull[39m,
+        [34mcreated_at[39m: "[32m2026-02-04 00:18:56[39m",
+        [34mupdated_at[39m: "[32m2026-02-04 00:18:56[39m",
+        +[1mprofile_photo_url[22m: "[32mhttps://ui-avatars.com/api/?name=A+S&color=7F9CF5&background=EBF4FF[39m",
+      },
+      [34;4mApp\Models\User[39;24m {#7124
+        [34mid[39m: [35m9[39m,
+        [34mname[39m: "[32mFernando Espinosa[39m",
+        [34memail[39m: "[32mfernando.espinosa@kpgroup.mx[39m",
+        [34memail_verified_at[39m: [36mnull[39m,
+        #[33mpassword[39m: "[32m$2y$12$xBp6nKCl4I/jT3R13Y1grucYWIp8vtc/P3fJALE2l7fA54vGv3M6u[39m",
+        #[33mtwo_factor_secret[39m: [36mnull[39m,
+        #[33mtwo_factor_recovery_codes[39m: [36mnull[39m,
+        [34mtwo_factor_confirmed_at[39m: [36mnull[39m,
+        #[33mremember_token[39m: [36mnull[39m,
+        [34mcurrent_team_id[39m: [36mnull[39m,
+        [34mprofile_photo_path[39m: [36mnull[39m,
+        [34mcreated_at[39m: "[32m2026-03-03 06:10:02[39m",
+        [34mupdated_at[39m: "[32m2026-03-03 06:10:02[39m",
+        +[1mprofile_photo_url[22m: "[32mhttps://ui-avatars.com/api/?name=F+E&color=7F9CF5&background=EBF4FF[39m",
+      },
+    ],
+  }
+

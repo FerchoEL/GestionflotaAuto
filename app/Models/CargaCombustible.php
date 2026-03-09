@@ -17,12 +17,15 @@ class CargaCombustible extends Model
         'importe',
         'foto_odometro_path',
         'foto_ticket_path',
+        'precio_litro',
+        'cuenta_analitica_id',
     ];
 
     protected $casts = [
         'fecha_carga' => 'datetime',
         'litros' => 'decimal:2',
-        'importe' => 'decimal:2',
+        'importe' => 'decimal:4',
+        'precio_litro' => 'decimal:2'
     ];
 
     public function vehiculo()
@@ -39,17 +42,21 @@ class CargaCombustible extends Model
     {
         return $this->hasOne(Rendimiento::class, 'carga_id', 'id');
     }
-    /* protected static function booted()
+    public function cuentaAnalitica()
     {
-        static::creating(function ($carga) {
-            $vehiculo = $carga->vehiculo;
+        return $this->belongsTo(\App\Models\CuentaAnalitica::class);
+    }
+    protected static function booted()
+    {
+        static::saving(function ($model) {
 
-            if (! $vehiculo || ! $vehiculo->responsables()->where('activo', true)->exists()) {
-                throw new \Exception(
-                    'No se puede registrar una carga para un vehículo sin responsable activo.'
+            if ($model->litros > 0 && $model->precio_litro > 0) {
+                $model->importe = round(
+                    $model->litros * $model->precio_litro,
+                    2
                 );
             }
         });
-    } */
+    }
 }
 

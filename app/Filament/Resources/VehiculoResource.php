@@ -14,6 +14,10 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use App\Models\User;
 use Illuminate\Validation\Rule;
+use App\Models\Departamento;
+use App\Models\Localidad;
+use Illuminate\Database\Eloquent\Model; 
+
 
 
 class VehiculoResource extends Resource
@@ -33,10 +37,30 @@ class VehiculoResource extends Resource
                 ->required(),
 
                 Forms\Components\Select::make('departamento_id')
-                    ->relationship('departamento', 'nombre'),
+                ->label('Departamento')
+                ->options(\App\Models\Departamento::where('activo', true)->pluck('nombre', 'id'))
+                ->required()
+                ->dehydrated(false)
+                ->afterStateHydrated(function ($component, $record) {
+                    if ($record) {
+                        $component->state(
+                            optional($record->departamentoActivo)->departamento_id
+                        );
+                    }
+                }),
 
                 Forms\Components\Select::make('localidad_id')
-                    ->relationship('localidad', 'nombre'),
+                    ->label('Localidad')
+                    ->options(\App\Models\Localidad::where('activo', true)->pluck('nombre', 'id'))
+                    ->required()
+                    ->dehydrated(false)
+                    ->afterStateHydrated(function ($component, $record) {
+                        if ($record) {
+                            $component->state(
+                                optional($record->localidadActiva)->localidad_id
+                            );
+                        }
+                    }),
 
                 Forms\Components\Select::make('estatus_id')
                     ->relationship('estatus', 'nombre')
@@ -57,12 +81,7 @@ class VehiculoResource extends Resource
                         'automatica' => 'Automática',
                     ])
                     ->nullable(),
-                Forms\Components\Select::make('centro_costo_id')
-                    ->label('Centro de costo')
-                    ->relationship('centroCosto', 'nombre')
-                    ->searchable()
-                    ->preload()
-                    ->nullable(),
+                
                 Forms\Components\TextInput::make('placas')
                     ->required()
                     ->maxLength(8)
@@ -99,14 +118,73 @@ class VehiculoResource extends Resource
                 Forms\Components\Select::make('responsable_user_id')
                 ->label('Responsable del vehículo')
                 ->options(User::role('responsable')->pluck('name', 'id'))
-                ->required(),
+                ->required()
+                ->dehydrated(false)
+                ->afterStateHydrated(function ($component, $record) {
+                    if ($record) {
+                        $component->state(
+                            optional($record->responsableActivo)->responsable_user_id
+                        );
+                    }
+                }),
 
             ]);
     }
 
     public static function canViewAny(): bool
     {
+        return auth()->user()->hasAnyRole([
+            'admin',
+            'activos',
+            'chofer',
+            'responsable',
+            'fondeo'
+        ]);
+    }
+
+    public static function canCreate(): bool
+    {
         return auth()->user()->hasAnyRole(['admin', 'activos']);
+    }
+
+    public static function canEdit(\Illuminate\Database\Eloquent\Model $record): bool
+    {
+        return auth()->user()->hasAnyRole(['admin', 'activos']);
+    }
+
+    public static function canDelete(\Illuminate\Database\Eloquent\Model $record): bool
+    {
+        return auth()->user()->hasRole('admin');
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        $query = parent::getEloquentQuery();
+        $user = auth()->user();
+
+        if ($user->hasRole('admin') || $user->hasRole('activos')) {
+            return $query;
+        }
+
+        if ($user->hasRole('chofer')) {
+            return $query->whereHas('choferes', function ($q) use ($user) {
+                $q->where('chofer_user_id', $user->id)
+                ->where('activo', true);
+            });
+        }
+
+        if ($user->hasRole('responsable')) {
+            return $query->whereHas('responsables', function ($q) use ($user) {
+                $q->where('responsable_user_id', $user->id)
+                ->where('activo', true);
+            });
+        }
+
+        if ($user->hasRole('fondeo')) {
+            return $query; // solo lectura pero puede ver todos
+        }
+
+        return $query->whereRaw('1 = 0');
     }
 
     public static function table(Table $table): Table
