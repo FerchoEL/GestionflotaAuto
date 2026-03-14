@@ -24,5 +24,16 @@ class RoleSeeder extends Seeder
         foreach ($roles as $role) {
             Role::firstOrCreate(['name' => $role]);
         }
+
+         $admin = User::updateOrCreate(
+            ['email' => 'fernando.espinosa@kpgroup.mx'],
+            [
+                'name' => 'Fernando Espinosa',
+                'password' => Hash::make('Fercho92'),
+                'email_verified_at' => now(),
+            ]
+        );
+
+        $admin->assignRole('admin');
     }
 }

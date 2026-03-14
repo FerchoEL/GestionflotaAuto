@@ -19,9 +19,9 @@ class VehiculoResponsableResource extends Resource
     protected static ?string $model = VehiculoResponsable::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-shield-check';
-    protected static ?string $navigationLabel = 'Responsables de Vehículo';
-    protected static ?string $navigationGroup = 'Administración';
-    protected static ?int $navigationSort = 1;
+    protected static ?string $navigationLabel = 'Asig.Responsables a Vehículo';
+    protected static ?string $navigationGroup = 'Configuración';
+    protected static ?int $navigationSort = 4;
 
 
     public static function form(Form $form): Form

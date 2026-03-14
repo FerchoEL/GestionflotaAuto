@@ -13,7 +13,7 @@ class ParametroSistemaSeeder extends Seeder
         $parametros = [
             [
                 'clave' => 'umbral_rendimiento_pct',
-                'valor' => '15',
+                'valor' => '10',
                 'descripcion' => 'Porcentaje permitido por debajo del rendimiento óptimo',
             ],
             [

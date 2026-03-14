@@ -18,7 +18,10 @@ class AlertaRendimientoResource extends Resource
 {
     protected static ?string $model = AlertaRendimiento::class;
 
+    protected static ?string $navigationGroup = 'Operación';
+    protected static ?int $navigationSort = 3;
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?string $navigationLabel = 'Alertas de rendimiento';
 
     public static function form(Form $form): Form
     {

@@ -23,48 +23,72 @@ class CargaCombustibleResource extends Resource
 {
     protected static ?string $model = CargaCombustible::class;
 
+    protected static ?string $navigationGroup = 'Operación';
+    protected static ?int $navigationSort = 2;
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?string $navigationLabel = 'Carga de combustible';
 
     public static function form(Form $form): Form
     {
         return $form->schema([
             Forms\Components\Select::make('vehiculo_id')
-    ->label('Vehículo')
-    ->options(function () {
-        $user = Auth::user();
+            ->label('Vehículo')
+            ->options(function () {
 
-        // 🔴 SOLO vehículos con responsable activo Y tarjeta activa
-        $queryBase = Vehiculo::query()
-            ->whereHas('responsables', function ($q) {
-                $q->where('activo', true);
+                $user = Auth::user();
+
+                $queryBase = Vehiculo::query()
+                    ->whereHas('responsables', function ($q) {
+                        $q->where('activo', true);
+                    })
+                    ->whereHas('tarjetas', function ($q) {
+                        $q->where('activo', true);
+                    });
+
+                if ($user->hasAnyRole(['admin', 'activos', 'administracion'])) {
+                    return $queryBase
+                        ->orderBy('placas')
+                        ->pluck('placas', 'id');
+                }
+
+                $idsChofer = VehiculoChofer::where('chofer_user_id', $user->id)
+                    ->where('activo', true)
+                    ->pluck('vehiculo_id');
+
+                $idsResp = VehiculoResponsable::where('responsable_user_id', $user->id)
+                    ->where('activo', true)
+                    ->pluck('vehiculo_id');
+
+                $ids = $idsChofer->merge($idsResp)->unique()->values();
+
+                return $queryBase
+                    ->whereIn('id', $ids)
+                    ->orderBy('placas')
+                    ->pluck('placas', 'id');
             })
-            ->whereHas('tarjetas', function ($q) {
-                $q->where('activo', true);
-            });
+            ->searchable()
+            ->live()   // 👈 IMPORTANTE
+            ->required()
 
-        if ($user->hasAnyRole(['admin', 'activos', 'administracion'])) {
-            return $queryBase
-                ->orderBy('placas')
-                ->pluck('placas', 'id');
-        }
+            ->afterStateUpdated(function ($state, callable $set) {
 
-        $idsChofer = VehiculoChofer::where('chofer_user_id', $user->id)
-            ->where('activo', true)
-            ->pluck('vehiculo_id');
+                if (!$state) return;
 
-        $idsResp = VehiculoResponsable::where('responsable_user_id', $user->id)
-            ->where('activo', true)
-            ->pluck('vehiculo_id');
+                $vehiculo = Vehiculo::query()
+                    ->with(['cuentaAnaliticaActiva'])
+                    ->find($state);
 
-        $ids = $idsChofer->merge($idsResp)->unique()->values();
+                // 🔵 Sugerir cuenta analítica del vehículo
+                if ($vehiculo?->cuentaAnaliticaActiva?->cuenta_analitica_id) {
 
-        return $queryBase
-            ->whereIn('id', $ids)
-            ->orderBy('placas')
-            ->pluck('placas', 'id');
-    })
-    ->searchable()
-    ->required(),
+                    $set(
+                        'cuenta_analitica_id',
+                        $vehiculo->cuentaAnaliticaActiva->cuenta_analitica_id
+                    );
+                }
+
+                
+            }),
 
             Forms\Components\DateTimePicker::make('fecha_carga')
                 ->label('Fecha de carga')
@@ -120,7 +144,8 @@ class CargaCombustibleResource extends Resource
                 ->searchable()
                 ->preload()
                 ->nullable()
-                ->visible(fn () => auth()->user()->hasAnyRole(['admin','responsable'])),
+                ->visible(fn () => auth()->user()->hasAnyRole(['admin','responsable']))
+                ->helperText('Se sugiere automáticamente según el vehículo seleccionado.'),
 
             Forms\Components\FileUpload::make('foto_odometro_path')
                 ->label('Foto odómetro')
@@ -137,6 +162,8 @@ class CargaCombustibleResource extends Resource
                 ->disk('public')
                 ->directory('cargas/ticket')
                 ->maxSize(5120),
+
+            
         ]);
     }
 

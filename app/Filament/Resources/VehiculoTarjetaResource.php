@@ -20,8 +20,12 @@ class VehiculoTarjetaResource extends Resource
     protected static ?string $model = VehiculoTarjeta::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-credit-card';
-    protected static ?string $navigationLabel = 'Asignar Tarjetas de Combustible';
-    protected static ?string $navigationGroup = 'Activos';
+    
+    protected static ?string $navigationGroup = 'Configuración';
+    protected static ?string $navigationLabel = 'Asig. Tarjeta a Vehiculo';
+    protected static ?string $label = 'Asig. Tarjeta a Vehiculo';
+    protected static ?int $navigationSort = 3;
+
 
     public static function canViewAny(): bool
     {

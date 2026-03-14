@@ -9,7 +9,7 @@ use Filament\Resources\Pages\CreateRecord;
 class CreateVehiculoTarjeta extends CreateRecord
 {
     protected static string $resource = VehiculoTarjetaResource::class;
-    protected static string $resource = VehiculoResource::class;
+    
 
     protected function afterCreate(): void
     {

@@ -26,7 +26,7 @@
                 <a href="#" class="hover:text-blue-600 transition">Funcionalidades</a>
                 <a href="#" class="hover:text-blue-600 transition">Beneficios</a>
                 @auth
-                    <a href="/admin" class="bg-slate-900 text-white px-5 py-2.5 rounded-full hover:bg-blue-700 transition shadow-lg shadow-blue-200">Panel de Control</a>
+                    <a href="/menu" class="bg-slate-900 text-white px-5 py-2.5 rounded-full hover:bg-blue-700 transition shadow-lg shadow-blue-200">Panel de Control</a>
                 @else
                     <a href="{{ route('login') }}" class="text-slate-900 hover:text-blue-600 transition">Iniciar Sesión</a>
                     <a href="#" class="bg-blue-600 text-white px-5 py-2.5 rounded-full hover:bg-blue-700 transition shadow-lg shadow-blue-200">Solicitar Demo</a>
@@ -150,7 +150,7 @@
             <div class="mb-8">
                 <span class="text-2xl font-bold tracking-tight text-slate-800 uppercase">K&P <span class="text-blue-600">Fleet</span></span>
             </div>
-            <p class="text-slate-500 mb-8 max-w-md mx-auto">Una división de KP Solutions dedicada a la transformación digital del sector transporte.</p>
+            <p class="text-slate-500 mb-8 max-w-md mx-auto">KPLogistics dedicada a la transformación digital del sector transporte.</p>
             <div class="border-t border-slate-100 pt-8 text-sm text-slate-400">
                 © {{ date('Y') }} K&P Group · Todos los derechos reservados.
             </div>

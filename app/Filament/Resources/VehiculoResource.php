@@ -23,9 +23,9 @@ use Illuminate\Database\Eloquent\Model;
 class VehiculoResource extends Resource
 {
     protected static ?string $model = Vehiculo::class;
-
-    protected static ?string $navigationIcon = 'heroicon-o-truck';
     protected static ?string $navigationGroup = 'Flota';
+    protected static ?int $navigationSort = 1;
+    protected static ?string $navigationIcon = 'heroicon-o-truck';
     protected static ?string $navigationLabel = 'Vehículos';
 
     public static function form(Form $form): Form
@@ -94,6 +94,9 @@ class VehiculoResource extends Resource
                      ->validationMessages([
                         'unique' => 'Esta placa ya está registrada.',
                     ]),
+                Forms\Components\TextInput::make('numero_economico')
+                    ->label('Número económico')
+                    ->maxLength(50),
                 Forms\Components\TextInput::make('vin')
                     ->required()
                     ->maxLength(17)

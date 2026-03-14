@@ -16,7 +16,7 @@ class TipoVehiculoSeeder extends Seeder
             'Camioneta',
             'Camión',
             'Tracto camión',
-            'Motocicleta',
+            
         ];
 
         foreach ($tipos as $nombre) {

@@ -17,8 +17,10 @@ class VehiculoFondeoConfigResource extends Resource
     protected static ?string $model = VehiculoFondeoConfig::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-banknotes';
-    protected static ?string $navigationGroup = 'Administración';
-    protected static ?string $navigationLabel = 'Asignación de Fondeo';
+    protected static ?string $navigationGroup = 'Configuración';
+    protected static ?string $navigationLabel = 'Asig. Litros de Fondeo';
+    protected static ?string $label = 'Asig. Litros de Fondeo';
+    protected static ?int $navigationSort = 2;
 
     public static function form(Form $form): Form
     {

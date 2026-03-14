@@ -18,9 +18,9 @@ class VehiculoChoferResource extends Resource
     protected static ?string $model = VehiculoChofer::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-user';
-    protected static ?string $navigationLabel = 'Asignación de Choferes';
-    protected static ?string $navigationGroup = 'Operación de Flota';
-    protected static ?int $navigationSort = 1;
+    protected static ?string $navigationLabel = 'Asig. Vehiculo a operador';
+    protected static ?string $navigationGroup = 'Configuración';
+    protected static ?int $navigationSort = 5;
 
     public static function form(Form $form): Form
     {

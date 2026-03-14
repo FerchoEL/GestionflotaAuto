@@ -14,7 +14,7 @@ class Vehiculo extends Model
         'estatus_id',
         'tipo_combustible',
         'transmision',
-        
+        'numero_economico',
         'placas',
         'vin',
         'marca',
@@ -123,6 +123,24 @@ class Vehiculo extends Model
         return $this->hasOne(VehiculoTarjeta::class)
             ->where('activo', true)
             ->orderByDesc('fecha_inicio')   // ✅ importante
+            ->orderByDesc('id');
+    }
+    public function choferActivo()
+    {
+        return $this->hasOne(\App\Models\VehiculoChofer::class, 'vehiculo_id', 'id')
+            ->where('activo', true)
+            ->orderByDesc('fecha_inicio');
+    }
+    public function cuentasAnaliticas()
+    {
+        return $this->hasMany(\App\Models\VehiculoCuentaAnalitica::class, 'vehiculo_id', 'id');
+    }
+
+    public function cuentaAnaliticaActiva()
+    {
+        return $this->hasOne(\App\Models\VehiculoCuentaAnalitica::class, 'vehiculo_id', 'id')
+            ->where('activo', true)
+            ->orderByDesc('fecha_inicio')
             ->orderByDesc('id');
     }
 

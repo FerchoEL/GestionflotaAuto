@@ -3,7 +3,6 @@
 namespace App\Filament\Pages;
 
 use App\Models\Vehiculo;
-use App\Models\CargaCombustible;
 use App\Models\Rendimiento;
 use App\Models\AlertaRendimiento;
 use Filament\Pages\Page;
@@ -29,7 +28,12 @@ class MisVehiculos extends Page
 
     public static function canAccess(): bool
     {
-        return auth()->user()?->hasAnyRole(['admin','responsable','chofer']) ?? false;
+        return auth()->user()?->hasAnyRole(['admin', 'responsable', 'chofer']) ?? false;
+    }
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return auth()->user()?->hasAnyRole(['admin', 'responsable', 'chofer']) ?? false;
     }
 
     public function vehiculosAsignados(): Collection
@@ -37,7 +41,6 @@ class MisVehiculos extends Page
         $user = auth()->user();
         $userId = $user->id;
 
-        // ADMIN
         if ($user->hasRole('admin')) {
             return Vehiculo::query()
                 ->where('activo', true)
@@ -45,23 +48,21 @@ class MisVehiculos extends Page
                 ->get();
         }
 
-        // CHOFER
         if ($user->hasRole('chofer')) {
             return Vehiculo::query()
                 ->where('activo', true)
                 ->whereHas('choferes', function ($q) use ($userId) {
                     $q->where('chofer_user_id', $userId)
-                      ->where('activo', true)
-                      ->where(function ($sub) {
-                          $sub->whereNull('fecha_fin')
-                              ->orWhere('fecha_fin', '>=', now());
-                      });
+                        ->where('activo', true)
+                        ->where(function ($sub) {
+                            $sub->whereNull('fecha_fin')
+                                ->orWhere('fecha_fin', '>=', now());
+                        });
                 })
                 ->orderBy('placas')
                 ->get();
         }
 
-        // RESPONSABLE
         return Vehiculo::query()
             ->where('activo', true)
             ->whereHas('responsableActivo', function ($q) use ($userId) {
@@ -84,34 +85,36 @@ class MisVehiculos extends Page
                 'departamentoActivo.departamento',
                 'localidadActiva.localidad',
                 'responsableActivo.responsable',
+                'choferActivo.chofer',
             ])
             ->find($this->vehiculoId);
     }
 
-    public function cargas(): Collection
-    {
-        if (!$this->vehiculoId) {
-            return collect();
-        }
-
-        return CargaCombustible::query()
-            ->where('vehiculo_id', $this->vehiculoId)
-            ->orderByDesc('fecha_carga')
-            ->limit(50)
-            ->get();
-    }
-
-    public function rendimientos(): Collection
+    public function historialRendimiento(): Collection
     {
         if (!$this->vehiculoId) {
             return collect();
         }
 
         return Rendimiento::query()
+            ->with(['carga'])
             ->where('vehiculo_id', $this->vehiculoId)
             ->orderByDesc('created_at')
             ->limit(50)
-            ->get();
+            ->get()
+            ->map(function ($rendimiento) {
+                $carga = $rendimiento->carga;
+
+                return (object) [
+                    'fecha' => $carga?->fecha_carga ?? $rendimiento->created_at,
+                    'km_actuales' => $carga?->km_odometro ?? '—',
+                    'km_recorridos' => $rendimiento->km_recorridos ?? '—',
+                    'litros' => $carga?->litros ?? '—',
+                    'rendimiento_km_l' => $rendimiento->rendimiento_km_l ?? '—',
+                    'precio_litro' => $carga?->precio_litro ?? '—',
+                    'importe' => $carga?->importe ?? '—',
+                ];
+            });
     }
 
     public function alertasAbiertas(): Collection

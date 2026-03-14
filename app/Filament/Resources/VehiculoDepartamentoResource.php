@@ -19,7 +19,10 @@ class VehiculoDepartamentoResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-building-office';
 
-    protected static ?string $navigationGroup = 'Activos';
+    protected static ?string $navigationGroup = 'Configuración';
+    protected static ?string $navigationLabel = 'Asig. Vehículo a Departamento';
+    protected static ?string $label = 'Asig. Vehículo a Departamento';
+    protected static ?int $navigationSort = 7;
 
     
 
@@ -82,5 +85,10 @@ class VehiculoDepartamentoResource extends Resource
             'create' => Pages\CreateVehiculoDepartamento::route('/create'),
             'edit' => Pages\EditVehiculoDepartamento::route('/{record}/edit'),
         ];
+    }
+
+    public static function canViewAny(): bool
+    {
+        return auth()->user()->hasAnyRole(['admin','activos']);
     }
 }

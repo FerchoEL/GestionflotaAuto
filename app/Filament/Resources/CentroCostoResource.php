@@ -21,7 +21,7 @@ class CentroCostoResource extends Resource
     
     protected static ?string $navigationIcon = 'heroicon-o-currency-dollar';
     protected static ?string $navigationGroup = 'Catálogos';
-    protected static ?string $navigationLabel = 'Centros de costo';
+    protected static ?string $navigationLabel = 'Cuentas Analíticas';
 
     public static function form(Form $form): Form
     {

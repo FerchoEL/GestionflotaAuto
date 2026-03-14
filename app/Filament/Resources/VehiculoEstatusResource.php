@@ -20,6 +20,7 @@ class VehiculoEstatusResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
     protected static ?string $navigationGroup = 'Catálogos';
+    protected static ?string $navigationLabel = 'Estatus de vehículos';
 
     public static function form(Form $form): Form
     {

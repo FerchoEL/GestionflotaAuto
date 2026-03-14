@@ -42,10 +42,14 @@ class CargaCombustible extends Model
     {
         return $this->hasOne(Rendimiento::class, 'carga_id', 'id');
     }
+    
+
     public function cuentaAnalitica()
     {
-        return $this->belongsTo(\App\Models\CuentaAnalitica::class);
+        return $this->belongsTo(CuentaAnalitica::class, 'cuenta_analitica_id', 'id');
     }
+
+    
     protected static function booted()
     {
         static::saving(function ($model) {

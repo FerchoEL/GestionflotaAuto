@@ -20,7 +20,11 @@ class VehiculoLocalidadResource extends Resource
 
      protected static ?string $navigationIcon = 'heroicon-o-map';
 
-    protected static ?string $navigationGroup = 'Activos';
+    protected static ?string $navigationGroup = 'Configuración';
+    protected static ?string $navigationLabel = 'Asig. Vehículo a Localidad';
+    protected static ?string $label = 'Asig. Vehículo a Localidad';
+    protected static ?int $navigationSort = 6;
+
 
     public static function form(Form $form): Form
     {

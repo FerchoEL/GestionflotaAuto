@@ -16,8 +16,9 @@ class FondeoResource extends Resource
 {
     protected static ?string $model = Fondeo::class;
     protected static ?string $navigationIcon = 'heroicon-o-banknotes';
-    protected static ?string $navigationLabel = 'Fondeos';
-    protected static ?string $navigationGroup = 'Administración';
+    protected static ?string $navigationLabel = 'Fondeo manual';
+    protected static ?string $navigationGroup = 'Configuración';
+    protected static ?int $navigationSort = 9;
 
     public static function form(Form $form): Form
     {

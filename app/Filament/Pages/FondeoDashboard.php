@@ -19,7 +19,8 @@ use Illuminate\Database\Eloquent\Model;
 class FondeoDashboard extends Page implements HasTable
 {
     use InteractsWithTable;
-
+    protected static ?string $navigationGroup = 'Operación';
+    protected static ?int $navigationSort = 2;
     protected static ?string $navigationIcon = 'heroicon-o-banknotes';
     protected static string $view = 'filament.pages.fondeo-dashboard';
     protected static ?string $navigationLabel = 'Fondeo Operativo';

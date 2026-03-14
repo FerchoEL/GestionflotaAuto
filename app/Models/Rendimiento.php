@@ -25,6 +25,7 @@ class Rendimiento extends Model
     {
         return $this->belongsTo(CargaCombustible::class, 'carga_id', 'id');
     }
+    
 
     public function vehiculo()
     {

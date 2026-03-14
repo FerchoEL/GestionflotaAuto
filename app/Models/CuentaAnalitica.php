@@ -14,8 +14,19 @@ class CuentaAnalitica extends Model
         'activo',
     ];
 
+    
+    protected $casts = [
+        'activo' => 'boolean',
+    ];
+
     public function cargas()
     {
-        return $this->hasMany(CargaCombustible::class);
+        return $this->hasMany(CargaCombustible::class, 'cuenta_analitica_id');
     }
+
+    public function vehiculoAsignaciones()
+    {
+        return $this->hasMany(VehiculoCuentaAnalitica::class, 'cuenta_analitica_id');
+    }
+
 }

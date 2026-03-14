@@ -16,8 +16,10 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 class TarjetaCombustibleResource extends Resource
 {
     protected static ?string $model = TarjetaCombustible::class;
-
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?string $navigationGroup = 'Operación';
+    protected static ?int $navigationSort = 2;
+    protected static ?string $navigationIcon = 'heroicon-o-credit-card';
+    protected static ?string $navigationLabel = 'Tarjetas de combustible';
 
     public static function form(Form $form): Form
     {
@@ -33,14 +35,20 @@ class TarjetaCombustibleResource extends Resource
                     ->default(true),
             ]);
     }
-
+    public static function canAccess(): bool
+    {
+        return auth()->user()->hasAnyRole([
+            'admin',
+            'fondeo'
+        ]);
+    }
     public static function table(Table $table): Table
     {
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('numero')
-            ->searchable()
-            ->sortable(),
+                    ->searchable()
+                    ->sortable(),
 
         Tables\Columns\TextColumn::make('descripcion'),
 
