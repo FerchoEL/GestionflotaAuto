@@ -13,10 +13,7 @@ class LocalidadSeeder extends Seeder
     {
         $localidades = [
             'Monterrey',
-            'Guadalupe',
-            'San Nicolás',
-            'Apodaca',
-            'Santa Catarina',
+            
         ];
 
         foreach ($localidades as $nombre) {

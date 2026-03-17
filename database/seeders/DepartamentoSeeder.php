@@ -11,11 +11,10 @@ class DepartamentoSeeder extends Seeder
     public function run(): void
     {
         $departamentos = [
-            'Operaciones',
-            'Logística',
-            'Mantenimiento',
+            'Dirección',
             'Administración',
-            'Finanzas',
+            'Infraestructura',
+            
         ];
 
         foreach ($departamentos as $nombre) {
