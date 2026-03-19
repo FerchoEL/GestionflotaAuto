@@ -45,7 +45,7 @@ class CargaCombustibleResource extends Resource
                         $q->where('activo', true);
                     });
 
-                if ($user->hasAnyRole(['admin', 'activos', 'administracion'])) {
+                if ($user->hasAnyRole(['admin', 'activos', 'fondeo'])) {
                     return $queryBase
                         ->orderBy('placas')
                         ->pluck('placas', 'id');
