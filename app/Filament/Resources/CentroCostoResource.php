@@ -63,7 +63,7 @@ class CentroCostoResource extends Resource
 
     public static function canViewAny(): bool
     {
-        return auth()->user()->hasAnyRole(['admin','activos', 'fondeoo']);
+        return auth()->user()->hasAnyRole(['admin','activos', 'fondeo']);
     }
 
     public static function canCreate(): bool
