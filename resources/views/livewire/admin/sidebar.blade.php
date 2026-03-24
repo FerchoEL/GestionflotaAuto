@@ -9,12 +9,29 @@
     <div class="space-y-2">
         @foreach ($modules as $module)
             <section
-                x-data="{ open: {{ $module['active'] || $loop->first ? 'true' : 'false' }} }"
+                x-data="{
+                    storageKey: 'sidebar-module-{{ $module['id'] }}',
+                    open: false,
+                    init() {
+                        const savedState = localStorage.getItem(this.storageKey);
+
+                        if (savedState !== null) {
+                            this.open = savedState === 'true';
+                            return;
+                        }
+
+                        this.open = false;
+                    },
+                    toggle() {
+                        this.open = ! this.open;
+                        localStorage.setItem(this.storageKey, this.open ? 'true' : 'false');
+                    },
+                }"
                 class="overflow-hidden rounded-xl border border-white/10 bg-gray-900/95"
             >
                 <button
                     type="button"
-                    x-on:click="open = ! open"
+                    x-on:click="toggle()"
                     class="flex w-full items-center gap-3 px-4 py-3 text-left transition hover:bg-white/[0.03]"
                 >
                     <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-primary-500/12 text-primary-300 ring-1 ring-primary-400/15">

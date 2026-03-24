@@ -84,16 +84,29 @@ class VehiculoDocumentoResource extends Resource
         return $table
             ->modifyQueryUsing(function (Builder $query): Builder {
                 $user = auth()->user();
+                $userId = $user->id;
 
-                if ($user->hasAnyRole(['admin', 'activos'])) {
+                $query->with(['vehiculo', 'tipoDocumento']);
+
+                if ($user->hasRole('admin') || $user->hasRole('activos')) {
                     return $query;
                 }
 
-                if ($user->hasAnyRole(['responsable', 'chofer'])) {
-                    return $query->whereHas('vehiculo.responsables', function (Builder $subQuery) use ($user) {
+                if ($user->hasRole('chofer')) {
+                    return $query->whereHas('vehiculo.choferes', function (Builder $subQuery) use ($userId) {
                         $subQuery
-                            ->where('responsable_user_id', $user->id)
-                            ->where('activo', true);
+                            ->where('chofer_user_id', $userId)
+                            ->where('activo', true)
+                            ->where(function (Builder $sub) {
+                                $sub->whereNull('fecha_fin')
+                                    ->orWhere('fecha_fin', '>=', now());
+                            });
+                    });
+                }
+
+                if ($user->hasRole('responsable')) {
+                    return $query->whereHas('vehiculo.responsableActivo', function (Builder $subQuery) use ($userId) {
+                        $subQuery->where('responsable_user_id', $userId);
                     });
                 }
 
