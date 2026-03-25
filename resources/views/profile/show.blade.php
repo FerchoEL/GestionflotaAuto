@@ -1,8 +1,23 @@
 <x-app-layout>
+    @php
+        $returnUrl = request()->filled('redirect')
+            ? request()->query('redirect')
+            : url('/menu');
+    @endphp
+
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            {{ __('Profile') }}
-        </h2>
+        <div class="flex items-center justify-between gap-4">
+            <h2 class="font-semibold text-xl text-gray-800 leading-tight">
+                {{ __('Profile') }}
+            </h2>
+
+            <a
+                href="{{ $returnUrl }}"
+                class="inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-xs font-semibold uppercase tracking-widest text-gray-700 shadow-sm transition hover:bg-gray-50 focus:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 active:bg-gray-100"
+            >
+                Regresar al sistema
+            </a>
+        </div>
     </x-slot>
 
     <div>
