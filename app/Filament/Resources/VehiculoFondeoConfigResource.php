@@ -28,7 +28,13 @@ class VehiculoFondeoConfigResource extends Resource
 
             Forms\Components\Select::make('vehiculo_id')
                 ->label('Vehículo')
-                ->options(Vehiculo::orderBy('placas')->pluck('placas', 'id'))
+                ->options(
+                    Vehiculo::query()
+                        ->orderBy('numero_economico')
+                        ->orderBy('placas')
+                        ->get()
+                        ->mapWithKeys(fn (Vehiculo $vehiculo): array => [$vehiculo->id => $vehiculo->display_name])
+                )
                 ->searchable()
                 ->required(),
 
@@ -47,9 +53,15 @@ class VehiculoFondeoConfigResource extends Resource
     {
         return $table
             ->columns([
+                Tables\Columns\TextColumn::make('vehiculo.numero_economico')
+                    ->label('No. Económico')
+                    ->searchable()
+                    ->sortable(),
+
                 Tables\Columns\TextColumn::make('vehiculo.placas')
-                    ->label('Vehículo')
-                    ->searchable(),
+                    ->label('Placas')
+                    ->searchable()
+                    ->sortable(),
 
                 Tables\Columns\TextColumn::make('litros_asignados'),
 

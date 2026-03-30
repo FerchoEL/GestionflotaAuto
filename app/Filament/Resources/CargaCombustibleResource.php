@@ -47,8 +47,10 @@ class CargaCombustibleResource extends Resource
 
                 if ($user->hasAnyRole(['admin', 'activos', 'fondeo'])) {
                     return $queryBase
+                        ->orderBy('numero_economico')
                         ->orderBy('placas')
-                        ->pluck('placas', 'id');
+                        ->get()
+                        ->mapWithKeys(fn (Vehiculo $vehiculo): array => [$vehiculo->id => $vehiculo->display_name]);
                 }
 
                 $idsChofer = VehiculoChofer::where('chofer_user_id', $user->id)
@@ -63,8 +65,10 @@ class CargaCombustibleResource extends Resource
 
                 return $queryBase
                     ->whereIn('id', $ids)
+                    ->orderBy('numero_economico')
                     ->orderBy('placas')
-                    ->pluck('placas', 'id');
+                    ->get()
+                    ->mapWithKeys(fn (Vehiculo $vehiculo): array => [$vehiculo->id => $vehiculo->display_name]);
             })
             ->searchable()
             ->live()   // 👈 IMPORTANTE
@@ -151,17 +155,40 @@ class CargaCombustibleResource extends Resource
                 ->label('Foto odómetro')
                 ->image()
                 ->required()
+                ->acceptedFileTypes(['image/*'])
+                ->extraInputAttributes([
+                    'accept' => 'image/*',
+                    'capture' => 'environment',
+                ])
                 ->disk('public')
                 ->directory('cargas/odometro')
-                ->maxSize(5120),
+                ->maxSize(20480),
 
             Forms\Components\FileUpload::make('foto_ticket_path')
                 ->label('Foto ticket')
                 ->image()
                 ->required()
+                ->acceptedFileTypes(['image/*'])
+                ->extraInputAttributes([
+                    'accept' => 'image/*',
+                    'capture' => 'environment',
+                ])
                 ->disk('public')
                 ->directory('cargas/ticket')
-                ->maxSize(5120),
+                ->maxSize(20480),
+
+            Forms\Components\FileUpload::make('foto_bomba_path')
+                ->label('Foto bomba')
+                ->image()
+                ->required()
+                ->acceptedFileTypes(['image/*'])
+                ->extraInputAttributes([
+                    'accept' => 'image/*',
+                    'capture' => 'environment',
+                ])
+                ->disk('public')
+                ->directory('cargas/bomba')
+                ->maxSize(20480),
 
             
         ]);
@@ -171,12 +198,19 @@ class CargaCombustibleResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('vehiculo.placas')->label('Vehículo')->searchable(),
-            Tables\Columns\TextColumn::make('fecha_carga')->dateTime()->sortable(),
-            Tables\Columns\TextColumn::make('km_odometro')->sortable(),
-            Tables\Columns\TextColumn::make('litros')->sortable(),
-            Tables\Columns\TextColumn::make('importe')->sortable()->toggleable(isToggledHiddenByDefault: true),
-            Tables\Columns\TextColumn::make('usuario.name')->label('Capturado por')->toggleable(isToggledHiddenByDefault: true),
+                Tables\Columns\TextColumn::make('vehiculo.numero_economico')
+                    ->label('No. Económico')
+                    ->searchable()
+                    ->sortable(),
+                Tables\Columns\TextColumn::make('vehiculo.placas')
+                    ->label('Placas')
+                    ->searchable()
+                    ->sortable(),
+                Tables\Columns\TextColumn::make('fecha_carga')->dateTime()->sortable(),
+                Tables\Columns\TextColumn::make('km_odometro')->sortable(),
+                Tables\Columns\TextColumn::make('litros')->sortable(),
+                Tables\Columns\TextColumn::make('importe')->sortable()->toggleable(isToggledHiddenByDefault: true),
+                Tables\Columns\TextColumn::make('usuario.name')->label('Capturado por')->toggleable(isToggledHiddenByDefault: true),
              ])
             ->defaultSort('fecha_carga', 'desc')
             ->actions([

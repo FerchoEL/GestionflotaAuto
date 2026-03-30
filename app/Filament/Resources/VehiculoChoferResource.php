@@ -5,6 +5,7 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\VehiculoChoferResource\Pages;
 use App\Filament\Resources\VehiculoChoferResource\RelationManagers;
 use App\Models\VehiculoChofer;
+use App\Models\Vehiculo;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -28,14 +29,22 @@ class VehiculoChoferResource extends Resource
             ->schema([
                 Forms\Components\Select::make('vehiculo_id')
                 ->label('Vehículo')
-                ->relationship('vehiculo', 'placas')
-                ->searchable()
+                ->relationship(
+                    name: 'vehiculo',
+                    titleAttribute: 'numero_economico',
+                    modifyQueryUsing: fn ($query) => $query
+                        ->orderBy('numero_economico')
+                        ->orderBy('placas')
+                )
+                ->getOptionLabelFromRecordUsing(fn (Vehiculo $record): string => $record->display_name)
+                ->searchable(['numero_economico', 'placas'])
                 ->required(),
 
                 Forms\Components\Select::make('chofer_user_id')
                     ->label('Chofer')
                     ->relationship('chofer', 'name')
-                    ->searchable()
+                    ->getOptionLabelFromRecordUsing(fn ($record): string => "{$record->name} ({$record->email})")
+                    ->searchable(['name', 'email'])
                     ->required(),
 
                 Forms\Components\DatePicker::make('fecha_inicio')
@@ -52,7 +61,8 @@ class VehiculoChoferResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('vehiculo.placas')->label('Vehículo'),
+                Tables\Columns\TextColumn::make('vehiculo.numero_economico')->label('No. Económico'),
+                Tables\Columns\TextColumn::make('vehiculo.placas')->label('Placas'),
                 Tables\Columns\TextColumn::make('chofer.name')->label('Chofer'),
                 Tables\Columns\TextColumn::make('fecha_inicio')->date(),
                 Tables\Columns\TextColumn::make('fecha_fin')->date(),

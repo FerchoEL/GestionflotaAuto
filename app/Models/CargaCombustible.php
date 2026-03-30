@@ -17,6 +17,7 @@ class CargaCombustible extends Model
         'importe',
         'foto_odometro_path',
         'foto_ticket_path',
+        'foto_bomba_path',
         'precio_litro',
         'cuenta_analitica_id',
     ];
@@ -63,4 +64,3 @@ class CargaCombustible extends Model
         });
     }
 }
-

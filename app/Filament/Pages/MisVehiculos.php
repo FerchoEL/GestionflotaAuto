@@ -44,6 +44,7 @@ class MisVehiculos extends Page
         if ($user->hasRole('admin')) {
             return Vehiculo::query()
                 ->where('activo', true)
+                ->orderBy('numero_economico')
                 ->orderBy('placas')
                 ->get();
         }
@@ -59,6 +60,7 @@ class MisVehiculos extends Page
                                 ->orWhere('fecha_fin', '>=', now());
                         });
                 })
+                ->orderBy('numero_economico')
                 ->orderBy('placas')
                 ->get();
         }
@@ -68,6 +70,7 @@ class MisVehiculos extends Page
             ->whereHas('responsableActivo', function ($q) use ($userId) {
                 $q->where('responsable_user_id', $userId);
             })
+            ->orderBy('numero_economico')
             ->orderBy('placas')
             ->get();
     }

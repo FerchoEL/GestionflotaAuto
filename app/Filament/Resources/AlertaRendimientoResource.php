@@ -55,41 +55,45 @@ class AlertaRendimientoResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('vehiculo.placas')->label('Vehículo'),
+                Tables\Columns\TextColumn::make('vehiculo.numero_economico')
+                    ->label('No. Económico')
+                    ->searchable()
+                    ->sortable(),
 
-            Tables\Columns\TextColumn::make('vehiculo.placas')
-                ->label('Vehículo')
-                ->searchable(),
+                Tables\Columns\TextColumn::make('vehiculo.placas')
+                    ->label('Placas')
+                    ->searchable()
+                    ->sortable(),
 
-            Tables\Columns\TextColumn::make('responsable.name')
-                ->label('Responsable')
-                ->toggleable(),
+                Tables\Columns\TextColumn::make('responsable.name')
+                    ->label('Responsable')
+                    ->toggleable(),
 
-            Tables\Columns\TextColumn::make('rendimiento_detectado')
-                ->label('Rendimiento Detectado')
-                ->sortable(),
+                Tables\Columns\TextColumn::make('rendimiento_detectado')
+                    ->label('Rendimiento Detectado')
+                    ->sortable(),
 
-            Tables\Columns\TextColumn::make('rendimiento_optimo')
-                ->label('Rendimiento Óptimo')
-                ->toggleable(),
+                Tables\Columns\TextColumn::make('rendimiento_optimo')
+                    ->label('Rendimiento Óptimo')
+                    ->toggleable(),
 
-            Tables\Columns\TextColumn::make('umbral_aplicado')
-                ->label('Umbral')
-                ->toggleable(),
+                Tables\Columns\TextColumn::make('umbral_aplicado')
+                    ->label('Umbral')
+                    ->toggleable(),
 
-            Tables\Columns\BadgeColumn::make('estatus')
-                ->colors([
-                    'danger' => 'Abierta',
-                    'success' => 'Cerrada',
-                ]),
+                Tables\Columns\BadgeColumn::make('estatus')
+                    ->colors([
+                        'danger' => 'Abierta',
+                        'success' => 'Cerrada',
+                    ]),
 
-            Tables\Columns\TextColumn::make('fecha_alerta')
-                ->dateTime()
-                ->sortable(),
+                Tables\Columns\TextColumn::make('fecha_alerta')
+                    ->dateTime()
+                    ->sortable(),
 
-            Tables\Columns\TextColumn::make('fecha_cierre')
-                ->dateTime()
-                ->toggleable(isToggledHiddenByDefault: true),
+                Tables\Columns\TextColumn::make('fecha_cierre')
+                    ->dateTime()
+                    ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->defaultSort('fecha_alerta', 'desc')
             ->filters([

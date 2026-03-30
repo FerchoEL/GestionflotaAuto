@@ -12,6 +12,7 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use App\Models\Vehiculo;
 
 class VehiculoDepartamentoResource extends Resource
 {
@@ -31,7 +32,15 @@ class VehiculoDepartamentoResource extends Resource
         return $form
             ->schema([
                 Forms\Components\Select::make('vehiculo_id')
-                ->relationship('vehiculo', 'placas')
+                ->relationship(
+                    name: 'vehiculo',
+                    titleAttribute: 'numero_economico',
+                    modifyQueryUsing: fn ($query) => $query
+                        ->orderBy('numero_economico')
+                        ->orderBy('placas')
+                )
+                ->getOptionLabelFromRecordUsing(fn (Vehiculo $record): string => $record->display_name)
+                ->searchable(['numero_economico', 'placas'])
                 ->required(),
 
                 Forms\Components\Select::make('departamento_id')
@@ -52,7 +61,8 @@ class VehiculoDepartamentoResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('vehiculo.placas'),
+                Tables\Columns\TextColumn::make('vehiculo.numero_economico')->label('No. Económico'),
+                Tables\Columns\TextColumn::make('vehiculo.placas')->label('Placas'),
                 Tables\Columns\TextColumn::make('departamento.nombre'),
                 Tables\Columns\TextColumn::make('fecha_inicio'),
                 Tables\Columns\TextColumn::make('fecha_fin'),

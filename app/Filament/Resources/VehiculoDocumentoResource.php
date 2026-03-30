@@ -4,6 +4,7 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\VehiculoDocumentoResource\Pages;
 use App\Models\TipoDocumento;
+use App\Models\Vehiculo;
 use App\Models\VehiculoDocumento;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\FileUpload;
@@ -34,8 +35,15 @@ class VehiculoDocumentoResource extends Resource
     {
         return $form->schema([
             Select::make('vehiculo_id')
-                ->relationship('vehiculo', 'placas')
-                ->searchable()
+                ->relationship(
+                    name: 'vehiculo',
+                    titleAttribute: 'numero_economico',
+                    modifyQueryUsing: fn ($query) => $query
+                        ->orderBy('numero_economico')
+                        ->orderBy('placas')
+                )
+                ->getOptionLabelFromRecordUsing(fn (Vehiculo $record): string => $record->display_name)
+                ->searchable(['numero_economico', 'placas'])
                 ->preload()
                 ->required()
                 ->label('Vehículo'),
@@ -113,11 +121,17 @@ class VehiculoDocumentoResource extends Resource
                 return $query->whereRaw('1 = 0');
             })
             ->columns([
-                TextColumn::make('vehiculo.placas')
-                    ->label('Unidad')
+                TextColumn::make('vehiculo.numero_economico')
+                    ->label('No. Económico')
                     ->searchable()
                     ->sortable()
                     ->weight('bold')
+                    ->size(TextColumnSize::Small),
+
+                TextColumn::make('vehiculo.placas')
+                    ->label('Placas')
+                    ->searchable()
+                    ->sortable()
                     ->size(TextColumnSize::Small),
 
                 TextColumn::make('tipoDocumento.nombre')
@@ -147,7 +161,7 @@ class VehiculoDocumentoResource extends Resource
                 auth()->user()->hasAnyRole(['admin', 'activos'])
                     ? [
                         Tables\Filters\SelectFilter::make('vehiculo_id')
-                            ->relationship('vehiculo', 'placas')
+                            ->relationship('vehiculo', 'numero_economico')
                             ->label('Vehículo'),
 
                         Tables\Filters\SelectFilter::make('tipo_documento_id')

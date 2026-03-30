@@ -13,6 +13,7 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Illuminate\Database\Eloquent\Model;
+use App\Models\Vehiculo;
 
 class VehiculoLocalidadResource extends Resource
 {
@@ -31,7 +32,15 @@ class VehiculoLocalidadResource extends Resource
         return $form
             ->schema([
                 Forms\Components\Select::make('vehiculo_id')
-                ->relationship('vehiculo', 'placas')
+                ->relationship(
+                    name: 'vehiculo',
+                    titleAttribute: 'numero_economico',
+                    modifyQueryUsing: fn ($query) => $query
+                        ->orderBy('numero_economico')
+                        ->orderBy('placas')
+                )
+                ->getOptionLabelFromRecordUsing(fn (Vehiculo $record): string => $record->display_name)
+                ->searchable(['numero_economico', 'placas'])
                 ->required(),
 
             Forms\Components\Select::make('localidad_id')
@@ -52,11 +61,12 @@ class VehiculoLocalidadResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('vehiculo.placas'),
-            Tables\Columns\TextColumn::make('localidad.nombre'),
-            Tables\Columns\TextColumn::make('fecha_inicio'),
-            Tables\Columns\TextColumn::make('fecha_fin'),
-            Tables\Columns\IconColumn::make('activo')->boolean(),
+                Tables\Columns\TextColumn::make('vehiculo.numero_economico')->label('No. Económico'),
+                Tables\Columns\TextColumn::make('vehiculo.placas')->label('Placas'),
+                Tables\Columns\TextColumn::make('localidad.nombre'),
+                Tables\Columns\TextColumn::make('fecha_inicio'),
+                Tables\Columns\TextColumn::make('fecha_fin'),
+                Tables\Columns\IconColumn::make('activo')->boolean(),
             ])
             ->filters([
                 //

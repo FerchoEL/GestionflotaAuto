@@ -4,6 +4,12 @@
         .fi-main-sidebar .fi-sidebar-nav > .fi-sidebar-nav-groups {
             display: none !important;
         }
+
+        @media (max-width: 1023px) {
+            .fi-main-sidebar {
+                --sidebar-width: min(22rem, 84vw);
+            }
+        }
     </style>
 
     <div class="space-y-2">
@@ -81,6 +87,7 @@
                                             <a
                                                 href="{{ $item['url'] }}"
                                                 wire:navigate
+                                                x-on:click="if (window.innerWidth < 1024) { $store.sidebar.close() }"
                                                 @class([
                                                     'group flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition',
                                                     'bg-primary-500/12 text-primary-100 ring-1 ring-primary-400/15' => $item['active'],

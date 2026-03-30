@@ -15,7 +15,7 @@
                             <x-filament::input.select wire:model.live="vehiculoId">
                                 @foreach($vehiculos as $v)
                                     <option value="{{ $v->id }}">
-                                        {{ $v->placas }} — {{ $v->marca }} {{ $v->modelo }}
+                                        {{ $v->numero_economico ?? '—' }} — {{ $v->placas }} — {{ $v->marca }} {{ $v->modelo }}
                                     </option>
                                 @endforeach
                             </x-filament::input.select>

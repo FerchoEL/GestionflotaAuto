@@ -96,7 +96,17 @@ class VehiculoResource extends Resource
                     ]),
                 Forms\Components\TextInput::make('numero_economico')
                     ->label('Número económico')
-                    ->maxLength(50),
+                    ->required()
+                    ->maxLength(50)
+                    ->live(onBlur: true)
+                    ->unique(
+                        table: Vehiculo::class,
+                        column: 'numero_economico',
+                        ignoreRecord: true
+                    )
+                    ->validationMessages([
+                        'unique' => 'Este número económico ya está registrado.',
+                    ]),
                 Forms\Components\TextInput::make('vin')
                     ->required()
                     ->maxLength(17)
@@ -194,7 +204,13 @@ class VehiculoResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('placas')->searchable(),
+                Tables\Columns\TextColumn::make('numero_economico')
+                    ->label('No. Económico')
+                    ->searchable()
+                    ->sortable(),
+                Tables\Columns\TextColumn::make('placas')
+                    ->searchable()
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('marca'),
                 Tables\Columns\TextColumn::make('modelo'),
                 Tables\Columns\TextColumn::make('tipoVehiculo.nombre')->label('Tipo'),

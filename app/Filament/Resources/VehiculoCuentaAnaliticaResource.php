@@ -5,6 +5,7 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\VehiculoCuentaAnaliticaResource\Pages;
 use App\Filament\Resources\VehiculoCuentaAnaliticaResource\RelationManagers;
 use App\Models\VehiculoCuentaAnalitica;
+use App\Models\Vehiculo;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -36,8 +37,15 @@ class VehiculoCuentaAnaliticaResource extends Resource
     {
         return $form->schema([
             Forms\Components\Select::make('vehiculo_id')
-                ->relationship('vehiculo', 'placas')
-                ->searchable()
+                ->relationship(
+                    name: 'vehiculo',
+                    titleAttribute: 'numero_economico',
+                    modifyQueryUsing: fn ($query) => $query
+                        ->orderBy('numero_economico')
+                        ->orderBy('placas')
+                )
+                ->getOptionLabelFromRecordUsing(fn (Vehiculo $record): string => $record->display_name)
+                ->searchable(['numero_economico', 'placas'])
                 ->preload()
                 ->required(),
 
@@ -66,13 +74,15 @@ class VehiculoCuentaAnaliticaResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('vehiculo.placas')
-                    ->label('Vehículo')
-                    ->searchable(),
-
                 Tables\Columns\TextColumn::make('vehiculo.numero_economico')
                     ->label('No. Económico')
-                    ->toggleable(),
+                    ->searchable()
+                    ->sortable(),
+
+                Tables\Columns\TextColumn::make('vehiculo.placas')
+                    ->label('Placas')
+                    ->searchable()
+                    ->sortable(),
 
                 Tables\Columns\TextColumn::make('cuentaAnalitica.nombre')
                     ->label('Cuenta Analítica')

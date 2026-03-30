@@ -70,7 +70,7 @@ class SolicitudCargaCombustibleResource extends Resource
         return $form->schema([
             Forms\Components\Placeholder::make('vehiculo')
                 ->label('Vehículo')
-                ->content(fn ($record) => $record?->vehiculo?->placas ?? '—'),
+                ->content(fn ($record) => $record?->vehiculo?->display_name ?? '—'),
 
             Forms\Components\Placeholder::make('fecha_carga')
                 ->label('Fecha de carga')
@@ -123,13 +123,15 @@ class SolicitudCargaCombustibleResource extends Resource
                     ->dateTime()
                     ->sortable(),
 
-                Tables\Columns\TextColumn::make('vehiculo.placas')
-                    ->label('Vehículo')
-                    ->searchable(),
-
                 Tables\Columns\TextColumn::make('vehiculo.numero_economico')
                     ->label('No. Económico')
-                    ->toggleable(),
+                    ->searchable()
+                    ->sortable(),
+
+                Tables\Columns\TextColumn::make('vehiculo.placas')
+                    ->label('Placas')
+                    ->searchable()
+                    ->sortable(),
 
                 Tables\Columns\TextColumn::make('usuario.name')
                     ->label('Capturado por')

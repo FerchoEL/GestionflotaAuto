@@ -53,7 +53,13 @@ class VehiculoTarjetaResource extends Resource
             ->schema([
                 Forms\Components\Select::make('vehiculo_id')
                 ->label('Vehículo')
-                ->options(Vehiculo::query()->orderBy('placas')->pluck('placas', 'id'))
+                ->options(
+                    Vehiculo::query()
+                        ->orderBy('numero_economico')
+                        ->orderBy('placas')
+                        ->get()
+                        ->mapWithKeys(fn (Vehiculo $vehiculo): array => [$vehiculo->id => $vehiculo->display_name])
+                )
                 ->searchable()
                 ->preload()
                 ->required(),
@@ -96,6 +102,11 @@ class VehiculoTarjetaResource extends Resource
                 ->label('Tarjeta')
                 ->searchable()
                 ->sortable(),
+
+                Tables\Columns\TextColumn::make('vehiculo.numero_economico')
+                    ->label('No. Económico')
+                    ->searchable()
+                    ->sortable(),
 
                 Tables\Columns\TextColumn::make('vehiculo.placas')
                     ->label('Placas')

@@ -52,9 +52,15 @@ class FondeoDashboard extends Page implements HasTable
                 ->sortable(),
 
             // Vehículo
+            Tables\Columns\TextColumn::make('numero_economico')
+                ->label('No. Económico')
+                ->searchable()
+                ->sortable(),
+
             Tables\Columns\TextColumn::make('placas')
-                ->label('Vehículo')
-                ->searchable(),
+                ->label('Placas')
+                ->searchable()
+                ->sortable(),
 
             Tables\Columns\TextColumn::make('asignado')
                 ->label('Asignado (L)')

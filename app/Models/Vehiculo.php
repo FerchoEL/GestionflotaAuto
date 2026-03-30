@@ -26,6 +26,18 @@ class Vehiculo extends Model
         'tolerancia_pct',
         'activo',
     ];
+
+    public function getDisplayNameAttribute(): string
+    {
+        $numeroEconomico = trim((string) $this->numero_economico);
+        $placas = trim((string) $this->placas);
+
+        if ($numeroEconomico !== '' && $placas !== '') {
+            return "{$numeroEconomico} - {$placas}";
+        }
+
+        return $numeroEconomico !== '' ? $numeroEconomico : $placas;
+    }
     
     public function tipoVehiculo()
     {
@@ -145,4 +157,3 @@ class Vehiculo extends Model
     }
 
 }
-

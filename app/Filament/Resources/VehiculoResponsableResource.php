@@ -13,6 +13,7 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Illuminate\Database\Eloquent\Model;
+use App\Models\Vehiculo;
 
 class VehiculoResponsableResource extends Resource
 {
@@ -29,8 +30,15 @@ class VehiculoResponsableResource extends Resource
         return $form
             ->schema([
                 Forms\Components\Select::make('vehiculo_id')
-                ->relationship('vehiculo', 'placas')
-                ->searchable()
+                ->relationship(
+                    name: 'vehiculo',
+                    titleAttribute: 'numero_economico',
+                    modifyQueryUsing: fn ($query) => $query
+                        ->orderBy('numero_economico')
+                        ->orderBy('placas')
+                )
+                ->getOptionLabelFromRecordUsing(fn (Vehiculo $record): string => $record->display_name)
+                ->searchable(['numero_economico', 'placas'])
                 ->required(),
 
                 Forms\Components\Select::make('responsable_user_id')
@@ -53,7 +61,8 @@ class VehiculoResponsableResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('vehiculo.placas')->label('Vehículo'),
+                Tables\Columns\TextColumn::make('vehiculo.numero_economico')->label('No. Económico'),
+                Tables\Columns\TextColumn::make('vehiculo.placas')->label('Placas'),
                 Tables\Columns\TextColumn::make('responsable.name')->label('Responsable'),
                 Tables\Columns\TextColumn::make('fecha_inicio')->date(),
                 Tables\Columns\TextColumn::make('fecha_fin')->date(),
