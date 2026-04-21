@@ -107,16 +107,57 @@ class CargaCombustibleResource extends Resource
                 ->numeric()
                 ->required()
                 ->rules([
-                    fn ($get) => function ($attribute, $value, $fail) use ($get) {
+                    fn ($get, ?Model $record) => function ($attribute, $value, $fail) use ($get, $record) {
                         $vehiculoId = $get('vehiculo_id');
-                        if (! $vehiculoId) return;
+                        $fechaCarga = $get('fecha_carga');
 
-                        $ultima = CargaCombustible::where('vehiculo_id', $vehiculoId)
-                            ->orderByDesc('id')
+                        if (! $vehiculoId || ! $fechaCarga) {
+                            return;
+                        }
+
+                        $recordId = $record?->id;
+
+                        $cargaAnterior = CargaCombustible::query()
+                            ->where('vehiculo_id', $vehiculoId)
+                            ->when($recordId, fn (Builder $query) => $query->whereKeyNot($recordId))
+                            ->where(function (Builder $query) use ($fechaCarga, $recordId) {
+                                $query->where('fecha_carga', '<', $fechaCarga);
+
+                                if ($recordId) {
+                                    $query->orWhere(function (Builder $subQuery) use ($fechaCarga, $recordId) {
+                                        $subQuery->where('fecha_carga', $fechaCarga)
+                                            ->where('id', '<', $recordId);
+                                    });
+                                } else {
+                                    $query->orWhere('fecha_carga', $fechaCarga);
+                                }
+                            })
+                            ->orderedChronologicallyDesc()
                             ->first();
 
-                        if ($ultima && (int)$value <= (int)$ultima->km_odometro) {
-                            $fail('El kilometraje debe ser mayor al último registrado.');
+                        if ($cargaAnterior && (int) $value <= (int) $cargaAnterior->km_odometro) {
+                            $fail('El kilometraje debe ser mayor al de la carga anterior en la secuencia histórica.');
+                            return;
+                        }
+
+                        $cargaSiguiente = CargaCombustible::query()
+                            ->where('vehiculo_id', $vehiculoId)
+                            ->when($recordId, fn (Builder $query) => $query->whereKeyNot($recordId))
+                            ->where(function (Builder $query) use ($fechaCarga, $recordId) {
+                                $query->where('fecha_carga', '>', $fechaCarga);
+
+                                if ($recordId) {
+                                    $query->orWhere(function (Builder $subQuery) use ($fechaCarga, $recordId) {
+                                        $subQuery->where('fecha_carga', $fechaCarga)
+                                            ->where('id', '>', $recordId);
+                                    });
+                                }
+                            })
+                            ->orderedChronologically()
+                            ->first();
+
+                        if ($cargaSiguiente && (int) $value >= (int) $cargaSiguiente->km_odometro) {
+                            $fail('El kilometraje debe ser menor al de la siguiente carga en la secuencia histórica.');
                         }
                     }
                 ]),
