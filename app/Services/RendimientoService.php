@@ -6,6 +6,7 @@ use App\Models\CargaCombustible;
 use App\Models\Rendimiento;
 use App\Models\AlertaRendimiento;
 use App\Models\ParametroSistema;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 
 class RendimientoService
@@ -15,88 +16,135 @@ class RendimientoService
      */
     public function procesarCarga(CargaCombustible $carga): void
     {
+        DB::transaction(fn () => $this->procesarCargaInterna($carga));
+    }
+
+    public function recalcularDesdeCarga(CargaCombustible $carga): void
+    {
         DB::transaction(function () use ($carga) {
+            $cargas = $this->obtenerCargasDesde($carga);
 
-            // Evitar reprocesos: si ya existe rendimiento para esta carga, no duplicar
-            if (Rendimiento::where('carga_id', $carga->id)->exists()) {
+            if ($cargas->isEmpty()) {
                 return;
             }
 
-            // Buscar la carga anterior del mismo vehículo
-            $cargaAnterior = CargaCombustible::where('vehiculo_id', $carga->vehiculo_id)
-                ->where('id', '<', $carga->id)
-                ->orderBy('id', 'desc')
-                ->first();
+            $cargaIds = $cargas->pluck('id');
 
-            // Si no hay carga anterior, se marca como base
-            if (!$cargaAnterior) {
-                Rendimiento::create([
-                    'carga_id' => $carga->id,
-                    'vehiculo_id' => $carga->vehiculo_id,
-                    'km_anterior' => null,
-                    'km_recorridos' => 0,
-                    'rendimiento_km_l' => null,
-                    'es_base' => true,
-                    'evaluado' => false,
-                ]);
+            AlertaRendimiento::whereIn('carga_id', $cargaIds)->delete();
+            Rendimiento::whereIn('carga_id', $cargaIds)->delete();
 
-                return;
+            foreach ($cargas as $cargaARecalcular) {
+                $this->procesarCargaInterna($cargaARecalcular);
             }
+        });
+    }
 
-            // Calcular kilómetros recorridos
-            $kmRecorridos = $carga->km_odometro - $cargaAnterior->km_odometro;
+    protected function procesarCargaInterna(CargaCombustible $carga): void
+    {
+        // Evitar reprocesos: si ya existe rendimiento para esta carga, no duplicar
+        if (Rendimiento::where('carga_id', $carga->id)->exists()) {
+            return;
+        }
 
-            if ($kmRecorridos <= 0 || $carga->litros <= 0) {
-                return;
-            }
+        $cargaAnterior = $this->obtenerCargaAnterior($carga);
 
-            // Calcular rendimiento
-            $rendimiento = round($kmRecorridos / $carga->litros, 2);
-
-            // Guardar rendimiento
+        // Si no hay carga anterior, se marca como base
+        if (! $cargaAnterior) {
             Rendimiento::create([
                 'carga_id' => $carga->id,
                 'vehiculo_id' => $carga->vehiculo_id,
-                'km_anterior' => $cargaAnterior->km_odometro,
-                'km_recorridos' => $kmRecorridos,
-                'rendimiento_km_l' => $rendimiento,
-                'es_base' => false,
-                'evaluado' => true,
+                'km_anterior' => null,
+                'km_recorridos' => 0,
+                'rendimiento_km_l' => null,
+                'es_base' => true,
+                'evaluado' => false,
             ]);
 
-            // Comparar contra rendimiento óptimo
-            $vehiculo = $carga->vehiculo;
+            return;
+        }
 
-            $tolerancia = $vehiculo->tolerancia_pct
-                ?? ParametroSistema::where('clave', 'umbral_rendimiento_pct')->value('valor')
-                ?? 0;
+        // Calcular kilómetros recorridos
+        $kmRecorridos = $carga->km_odometro - $cargaAnterior->km_odometro;
 
-            $umbralMinimo = $vehiculo->rendimiento_optimo_km_l * (1 - ($tolerancia / 100));
+        if ($kmRecorridos <= 0 || $carga->litros <= 0) {
+            return;
+        }
 
-            if ($rendimiento < $umbralMinimo) {
+        // Calcular rendimiento
+        $rendimiento = round($kmRecorridos / $carga->litros, 2);
 
-                // Evitar alertas duplicadas por la misma carga
-                if (AlertaRendimiento::where('carga_id', $carga->id)->exists()) {
-                    return;
-                }
+        // Guardar rendimiento
+        Rendimiento::create([
+            'carga_id' => $carga->id,
+            'vehiculo_id' => $carga->vehiculo_id,
+            'km_anterior' => $cargaAnterior->km_odometro,
+            'km_recorridos' => $kmRecorridos,
+            'rendimiento_km_l' => $rendimiento,
+            'es_base' => false,
+            'evaluado' => true,
+        ]);
 
-                // Responsable vigente: ordenar por fecha_inicio
-                $responsableActivo = $vehiculo->responsables()
-                    ->where('activo', true)
-                    ->orderByDesc('fecha_inicio')
-                    ->first();
+        // Comparar contra rendimiento óptimo
+        $vehiculo = $carga->vehiculo;
 
-                AlertaRendimiento::create([
-                    'vehiculo_id' => $vehiculo->id,
-                    'responsable_user_id' => optional($responsableActivo)->responsable_user_id,
-                    'carga_id' => $carga->id,
-                    'rendimiento_detectado' => $rendimiento,
-                    'rendimiento_optimo' => $vehiculo->rendimiento_optimo_km_l,
-                    'umbral_aplicado' => $umbralMinimo,
-                    'estatus' => 'Abierta',
-                    'fecha_alerta' => now(),
-                ]);
+        $tolerancia = $vehiculo->tolerancia_pct
+            ?? ParametroSistema::where('clave', 'umbral_rendimiento_pct')->value('valor')
+            ?? 0;
+
+        $umbralMinimo = $vehiculo->rendimiento_optimo_km_l * (1 - ($tolerancia / 100));
+
+        if ($rendimiento < $umbralMinimo) {
+            // Evitar alertas duplicadas por la misma carga
+            if (AlertaRendimiento::where('carga_id', $carga->id)->exists()) {
+                return;
             }
-        });
+
+            // Responsable vigente: ordenar por fecha_inicio
+            $responsableActivo = $vehiculo->responsables()
+                ->where('activo', true)
+                ->orderByDesc('fecha_inicio')
+                ->first();
+
+            AlertaRendimiento::create([
+                'vehiculo_id' => $vehiculo->id,
+                'responsable_user_id' => optional($responsableActivo)->responsable_user_id,
+                'carga_id' => $carga->id,
+                'rendimiento_detectado' => $rendimiento,
+                'rendimiento_optimo' => $vehiculo->rendimiento_optimo_km_l,
+                'umbral_aplicado' => $umbralMinimo,
+                'estatus' => 'Abierta',
+                'fecha_alerta' => now(),
+            ]);
+        }
+    }
+
+    protected function obtenerCargaAnterior(CargaCombustible $carga): ?CargaCombustible
+    {
+        return CargaCombustible::query()
+            ->where('vehiculo_id', $carga->vehiculo_id)
+            ->where(function ($query) use ($carga) {
+                $query->where('fecha_carga', '<', $carga->fecha_carga)
+                    ->orWhere(function ($subQuery) use ($carga) {
+                        $subQuery->where('fecha_carga', $carga->fecha_carga)
+                            ->where('id', '<', $carga->id);
+                    });
+            })
+            ->orderedChronologicallyDesc()
+            ->first();
+    }
+
+    protected function obtenerCargasDesde(CargaCombustible $carga): Collection
+    {
+        return CargaCombustible::query()
+            ->where('vehiculo_id', $carga->vehiculo_id)
+            ->where(function ($query) use ($carga) {
+                $query->where('fecha_carga', '>', $carga->fecha_carga)
+                    ->orWhere(function ($subQuery) use ($carga) {
+                        $subQuery->where('fecha_carga', $carga->fecha_carga)
+                            ->where('id', '>=', $carga->id);
+                    });
+            })
+            ->orderedChronologically()
+            ->get();
     }
 }

@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Builder;
 
 class CargaCombustible extends Model
 {
@@ -28,6 +29,20 @@ class CargaCombustible extends Model
         'importe' => 'decimal:4',
         'precio_litro' => 'decimal:2'
     ];
+
+    public function scopeOrderedChronologically(Builder $query): Builder
+    {
+        return $query
+            ->orderBy('fecha_carga')
+            ->orderBy('id');
+    }
+
+    public function scopeOrderedChronologicallyDesc(Builder $query): Builder
+    {
+        return $query
+            ->orderByDesc('fecha_carga')
+            ->orderByDesc('id');
+    }
 
     public function vehiculo()
     {
