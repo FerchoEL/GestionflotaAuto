@@ -27,6 +27,14 @@ class AlertaRendimientoResource extends Resource
     {
         return $form
             ->schema([
+                Forms\Components\Placeholder::make('tipo')
+                    ->label('Tipo de alerta')
+                    ->content(fn (?Model $record): string => match ($record?->tipo) {
+                        'rendimiento_anormal_alto' => 'Rendimiento anormalmente alto',
+                        'bajo_rendimiento' => 'Bajo rendimiento',
+                        default => '—',
+                    }),
+
                 Forms\Components\Select::make('estatus')
                 ->options([
                     'Abierta' => 'Abierta',
@@ -68,6 +76,18 @@ class AlertaRendimientoResource extends Resource
                 Tables\Columns\TextColumn::make('responsable.name')
                     ->label('Responsable')
                     ->toggleable(),
+
+                Tables\Columns\BadgeColumn::make('tipo')
+                    ->label('Tipo')
+                    ->formatStateUsing(fn (?string $state): string => match ($state) {
+                        'rendimiento_anormal_alto' => 'Rend. alto',
+                        'bajo_rendimiento' => 'Bajo rend.',
+                        default => '—',
+                    })
+                    ->colors([
+                        'warning' => 'rendimiento_anormal_alto',
+                        'danger' => 'bajo_rendimiento',
+                    ]),
 
                 Tables\Columns\TextColumn::make('rendimiento_detectado')
                     ->label('Rendimiento Detectado')

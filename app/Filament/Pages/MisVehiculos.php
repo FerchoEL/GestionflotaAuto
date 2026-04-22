@@ -2,20 +2,27 @@
 
 namespace App\Filament\Pages;
 
+use App\Models\CargaCombustible;
 use App\Models\Vehiculo;
-use App\Models\Rendimiento;
 use App\Models\AlertaRendimiento;
+use App\Models\VehiculoDocumento;
 use Filament\Pages\Page;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Storage;
+use Livewire\WithPagination;
 
 class MisVehiculos extends Page
 {
+    use WithPagination;
+
     protected static ?string $navigationIcon = 'heroicon-o-clipboard-document-list';
     protected static string $view = 'filament.pages.mis-vehiculos';
     protected static ?string $navigationGroup = 'Operación';
     protected static ?string $navigationLabel = 'Mis Vehículos';
 
     public ?int $vehiculoId = null;
+    protected string $paginationTheme = 'tailwind';
 
     public function mount(): void
     {
@@ -24,6 +31,11 @@ class MisVehiculos extends Page
         if ($vehiculos->isNotEmpty()) {
             $this->vehiculoId = $vehiculos->first()->id;
         }
+    }
+
+    public function updatedVehiculoId(): void
+    {
+        $this->resetPage('historialPage');
     }
 
     public static function canAccess(): bool
@@ -89,33 +101,65 @@ class MisVehiculos extends Page
                 'localidadActiva.localidad',
                 'responsableActivo.responsable',
                 'choferActivo.chofer',
+                'documentos.tipoDocumento',
             ])
             ->find($this->vehiculoId);
     }
 
-    public function historialRendimiento(): Collection
+    public function historialRendimiento(): LengthAwarePaginator
     {
         if (!$this->vehiculoId) {
+            return new LengthAwarePaginator([], 0, 10, 1, [
+                'path' => request()->url(),
+                'pageName' => 'historialPage',
+            ]);
+        }
+
+        $historial = CargaCombustible::query()
+            ->with(['rendimiento'])
+            ->where('vehiculo_id', $this->vehiculoId)
+            ->orderByDesc('fecha_carga')
+            ->orderByDesc('id')
+            ->paginate(10, ['*'], 'historialPage');
+
+        $historial->setCollection(
+            $historial->getCollection()->map(function (CargaCombustible $carga) {
+                $rendimiento = $carga->rendimiento;
+
+                return (object) [
+                    'fecha' => $carga->fecha_carga?->format('d/m/Y h:i A') ?? '—',
+                    'km_actuales' => $carga->km_odometro !== null ? number_format((float) $carga->km_odometro, 0) : '—',
+                    'km_recorridos' => $rendimiento?->km_recorridos !== null ? number_format((float) $rendimiento->km_recorridos, 0) : '—',
+                    'litros' => $carga->litros !== null ? number_format((float) $carga->litros, 2) : '—',
+                    'rendimiento_km_l' => $rendimiento?->rendimiento_km_l !== null ? number_format((float) $rendimiento->rendimiento_km_l, 2) . ' km/L' : '—',
+                    'precio_litro' => $carga->precio_litro !== null ? '$' . number_format((float) $carga->precio_litro, 2) : '—',
+                    'importe' => $carga->importe !== null ? '$' . number_format((float) $carga->importe, 2) : '—',
+                ];
+            })
+        );
+
+        return $historial;
+    }
+
+    public function documentosVehiculo(): Collection
+    {
+        if (! $this->vehiculoId) {
             return collect();
         }
 
-        return Rendimiento::query()
-            ->with(['carga'])
+        return VehiculoDocumento::query()
+            ->with('tipoDocumento')
             ->where('vehiculo_id', $this->vehiculoId)
-            ->orderByDesc('created_at')
-            ->limit(50)
+            ->orderBy('tipo_documento_id')
+            ->orderBy('nombre')
             ->get()
-            ->map(function ($rendimiento) {
-                $carga = $rendimiento->carga;
-
+            ->map(function (VehiculoDocumento $documento) {
                 return (object) [
-                    'fecha' => $carga?->fecha_carga ?? $rendimiento->created_at,
-                    'km_actuales' => $carga?->km_odometro ?? '—',
-                    'km_recorridos' => $rendimiento->km_recorridos ?? '—',
-                    'litros' => $carga?->litros ?? '—',
-                    'rendimiento_km_l' => $rendimiento->rendimiento_km_l ?? '—',
-                    'precio_litro' => $carga?->precio_litro ?? '—',
-                    'importe' => $carga?->importe ?? '—',
+                    'nombre_documento' => $documento->tipoDocumento?->nombre ?? 'Sin tipo',
+                    'nombre_archivo' => $documento->nombre,
+                    'fecha_vigencia' => $documento->fecha_vencimiento?->format('d/m/Y') ?? 'Sin vigencia',
+                    'estado_vigencia' => $documento->colorEstadoVigencia(),
+                    'url_descarga' => Storage::disk('public')->url($documento->archivo_path),
                 ];
             });
     }

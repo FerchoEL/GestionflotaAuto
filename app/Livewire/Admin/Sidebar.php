@@ -4,6 +4,7 @@ namespace App\Livewire\Admin;
 
 use App\Filament\Pages\FondeoDashboard;
 use App\Filament\Pages\MisVehiculos;
+use App\Filament\Pages\RegistrarCargaExtemporanea;
 use App\Filament\Pages\ReporteCombustible;
 use App\Filament\Resources\AlertaRendimientoResource;
 use App\Filament\Resources\CargaCombustibleResource;
@@ -75,6 +76,7 @@ class Sidebar extends Component
                     $this->buildSection('Operación', 'heroicon-o-bolt', [
                         $this->pageItem('Mis Vehículos', 'heroicon-o-clipboard-document-list', MisVehiculos::class, Vehiculo::class),
                         $this->pageItem('Fondeo Operativo', 'heroicon-o-banknotes', FondeoDashboard::class, Fondeo::class),
+                        $this->pageItem('Carga extemporánea', 'heroicon-o-clock', RegistrarCargaExtemporanea::class, CargaCombustible::class),
                         $this->resourceItem('Carga de combustible', 'heroicon-o-beaker', CargaCombustibleResource::class, CargaCombustible::class),
                         $this->resourceItem('Tarjetas de combustible', 'heroicon-o-credit-card', TarjetaCombustibleResource::class, TarjetaCombustible::class),
                         $this->resourceItem(

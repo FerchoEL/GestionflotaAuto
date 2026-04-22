@@ -12,6 +12,7 @@ class AlertaRendimiento extends Model
         'vehiculo_id',
         'responsable_user_id',
         'carga_id',
+        'tipo',
         'rendimiento_detectado',
         'rendimiento_optimo',
         'umbral_aplicado',

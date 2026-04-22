@@ -231,6 +231,30 @@ class CargaCombustibleResource extends Resource
                 ->directory('cargas/bomba')
                 ->maxSize(20480),
 
+            Forms\Components\Toggle::make('es_extemporanea')
+                ->label('Carga extemporánea')
+                ->disabled()
+                ->dehydrated(false)
+                ->visible(fn (?Model $record) => filled($record)),
+
+            Forms\Components\Textarea::make('motivo_correccion')
+                ->label('Motivo de corrección')
+                ->disabled()
+                ->dehydrated(false)
+                ->rows(3)
+                ->columnSpanFull()
+                ->visible(fn (?Model $record) => filled($record) && (bool) $record?->es_extemporanea),
+
+            Forms\Components\Placeholder::make('registrada_por_auditoria')
+                ->label('Registrada por')
+                ->content(fn (?Model $record): string => $record?->registradaPor?->name ?? '—')
+                ->visible(fn (?Model $record) => filled($record) && (bool) $record?->es_extemporanea),
+
+            Forms\Components\Placeholder::make('fecha_registro_real_auditoria')
+                ->label('Fecha de registro administrativo')
+                ->content(fn (?Model $record): string => $record?->fecha_registro_real?->format('d/m/Y h:i A') ?? '—')
+                ->visible(fn (?Model $record) => filled($record) && (bool) $record?->es_extemporanea),
+
             
         ]);
     }
@@ -250,6 +274,24 @@ class CargaCombustibleResource extends Resource
                 Tables\Columns\TextColumn::make('fecha_carga')->dateTime()->sortable(),
                 Tables\Columns\TextColumn::make('km_odometro')->sortable(),
                 Tables\Columns\TextColumn::make('litros')->sortable(),
+                Tables\Columns\IconColumn::make('es_extemporanea')
+                    ->label('Ext.')
+                    ->boolean()
+                    ->trueIcon('heroicon-o-clock')
+                    ->falseIcon('heroicon-o-minus')
+                    ->toggleable(),
+                Tables\Columns\TextColumn::make('motivo_correccion')
+                    ->label('Motivo corrección')
+                    ->limit(40)
+                    ->wrap()
+                    ->toggleable(isToggledHiddenByDefault: true),
+                Tables\Columns\TextColumn::make('registradaPor.name')
+                    ->label('Registrada por')
+                    ->toggleable(isToggledHiddenByDefault: true),
+                Tables\Columns\TextColumn::make('fecha_registro_real')
+                    ->label('Registro administrativo')
+                    ->dateTime()
+                    ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('importe')->sortable()->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('usuario.name')->label('Capturado por')->toggleable(isToggledHiddenByDefault: true),
              ])

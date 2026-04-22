@@ -19,6 +19,7 @@ class Rendimiento extends Model
     protected $casts = [
         'es_base' => 'boolean',
         'evaluado' => 'boolean',
+        'rendimiento_km_l' => 'decimal:2',
     ];
 
     public function carga()

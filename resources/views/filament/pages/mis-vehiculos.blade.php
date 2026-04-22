@@ -115,17 +115,62 @@
                             </tbody>
                         </table>
                     </div>
+
+                    <div class="mt-4">
+                        {{ $historial->links() }}
+                    </div>
                 @endif
             </x-filament::section>
 
             <x-filament::section heading="Documentos del vehículo">
-                <div class="text-sm text-gray-400 space-y-1">
-                    <div>Próximamente se mostrarán aquí:</div>
-                    <div>• Tarjeta de circulación</div>
-                    <div>• Póliza de seguro</div>
-                    <div>• Verificación físico-mecánica</div>
-                    <div>• Permisos y documentación adicional</div>
-                </div>
+                @php($documentos = $this->documentosVehiculo())
+
+                @if($documentos->isEmpty())
+                    <div class="text-sm text-gray-400">
+                        Este vehículo no tiene documentos registrados.
+                    </div>
+                @else
+                    <div class="overflow-auto">
+                        <table class="w-full text-sm">
+                            <thead>
+                                <tr class="text-left border-b border-gray-700">
+                                    <th class="py-2 pr-3">Tipo de documento</th>
+                                    <th class="py-2 pr-3">Nombre</th>
+                                    <th class="py-2 pr-3">Vigencia</th>
+                                    <th class="py-2 pr-3">Descarga</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach($documentos as $documento)
+                                    <tr class="border-b border-gray-800">
+                                        <td class="py-2 pr-3">{{ $documento->nombre_documento }}</td>
+                                        <td class="py-2 pr-3">{{ $documento->nombre_archivo }}</td>
+                                        <td class="py-2 pr-3">
+                                            <span @class([
+                                                'inline-flex rounded-full px-2 py-1 text-xs font-medium',
+                                                'bg-gray-100 text-gray-700' => $documento->estado_vigencia === 'gray',
+                                                'bg-red-100 text-red-700' => $documento->estado_vigencia === 'danger',
+                                                'bg-yellow-100 text-yellow-700' => $documento->estado_vigencia === 'warning',
+                                                'bg-green-100 text-green-700' => $documento->estado_vigencia === 'success',
+                                            ])>
+                                                {{ $documento->fecha_vigencia }}
+                                            </span>
+                                        </td>
+                                        <td class="py-2 pr-3">
+                                            <a
+                                                href="{{ $documento->url_descarga }}"
+                                                target="_blank"
+                                                class="text-primary-600 hover:text-primary-500 underline"
+                                            >
+                                                Descargar
+                                            </a>
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                @endif
             </x-filament::section>
 
         </div>

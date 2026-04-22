@@ -35,21 +35,25 @@ class VehiculoDocumentoResource extends Resource
     {
         return $form->schema([
             Select::make('vehiculo_id')
-                ->relationship(
-                    name: 'vehiculo',
-                    titleAttribute: 'numero_economico',
-                    modifyQueryUsing: fn ($query) => $query
-                        ->orderBy('numero_economico')
-                        ->orderBy('placas')
-                )
-                ->getOptionLabelFromRecordUsing(fn (Vehiculo $record): string => $record->display_name)
+                ->options(fn () => Vehiculo::query()
+                    ->orderBy('numero_economico')
+                    ->orderBy('placas')
+                    ->get()
+                    ->mapWithKeys(fn (Vehiculo $record): array => [
+                        $record->id => $record->display_name !== '' ? $record->display_name : 'Vehículo sin identificación',
+                    ]))
                 ->searchable(['numero_economico', 'placas'])
                 ->preload()
                 ->required()
                 ->label('Vehículo'),
 
             Select::make('tipo_documento_id')
-                ->relationship('tipoDocumento', 'nombre')
+                ->options(fn () => TipoDocumento::query()
+                    ->orderBy('nombre')
+                    ->get()
+                    ->mapWithKeys(fn (TipoDocumento $record): array => [
+                        $record->id => filled($record->nombre) ? $record->nombre : 'Tipo de documento sin nombre',
+                    ]))
                 ->searchable()
                 ->preload()
                 ->live()
@@ -161,11 +165,22 @@ class VehiculoDocumentoResource extends Resource
                 auth()->user()->hasAnyRole(['admin', 'activos'])
                     ? [
                         Tables\Filters\SelectFilter::make('vehiculo_id')
-                            ->relationship('vehiculo', 'numero_economico')
+                            ->options(fn () => Vehiculo::query()
+                                ->orderBy('numero_economico')
+                                ->orderBy('placas')
+                                ->get()
+                                ->mapWithKeys(fn (Vehiculo $record): array => [
+                                    $record->id => $record->display_name !== '' ? $record->display_name : 'Vehículo sin identificación',
+                                ]))
                             ->label('Vehículo'),
 
                         Tables\Filters\SelectFilter::make('tipo_documento_id')
-                            ->relationship('tipoDocumento', 'nombre')
+                            ->options(fn () => TipoDocumento::query()
+                                ->orderBy('nombre')
+                                ->get()
+                                ->mapWithKeys(fn (TipoDocumento $record): array => [
+                                    $record->id => filled($record->nombre) ? $record->nombre : 'Tipo de documento sin nombre',
+                                ]))
                             ->label('Tipo de documento'),
                     ]
                     : []

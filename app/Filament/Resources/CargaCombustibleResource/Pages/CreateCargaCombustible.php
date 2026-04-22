@@ -6,10 +6,10 @@ use App\Filament\Resources\CargaCombustibleResource;
 use App\Models\Vehiculo;
 use App\Models\CargaCombustible;
 use App\Services\RendimientoService;
+use Filament\Notifications\Notification;
 use Filament\Resources\Pages\CreateRecord;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
-use Filament\Notifications\Notification;
 use Throwable;
 
 class CreateCargaCombustible extends CreateRecord
@@ -74,8 +74,32 @@ class CreateCargaCombustible extends CreateRecord
     protected function afterCreate(): void
     {
         try {
-            app(RendimientoService::class)
-                ->procesarCarga($this->record);
+            $servicio = app(RendimientoService::class);
+
+            $tieneCargasPosteriores = CargaCombustible::query()
+                ->where('vehiculo_id', $this->record->vehiculo_id)
+                ->where(function ($query) {
+                    $query->where('fecha_carga', '>', $this->record->fecha_carga)
+                        ->orWhere(function ($subQuery) {
+                            $subQuery->where('fecha_carga', $this->record->fecha_carga)
+                                ->where('id', '>', $this->record->id);
+                        });
+                })
+                ->exists();
+
+            if ($tieneCargasPosteriores) {
+                $servicio->recalcularDesdeCarga($this->record);
+
+                Notification::make()
+                    ->title('La carga se registró correctamente')
+                    ->body('Esta acción recalculó rendimientos y alertas posteriores.')
+                    ->success()
+                    ->send();
+
+                return;
+            }
+
+            $servicio->procesarCarga($this->record);
 
         } catch (Throwable $e) {
 

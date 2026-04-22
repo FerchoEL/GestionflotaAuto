@@ -38,11 +38,17 @@ class AlertaRendimientoMailNotification extends Notification
         $a = $this->alerta;
 
         $placas = $a->vehiculo?->placas ?? 'N/A';
+        $tipo = match ($a->tipo) {
+            'rendimiento_anormal_alto' => 'Rendimiento anormalmente alto',
+            'bajo_rendimiento' => 'Bajo rendimiento',
+            default => 'Desviacion de rendimiento',
+        };
 
         return (new MailMessage)
-            ->subject("🚨 Alerta de Rendimiento - {$placas}")
+            ->subject("🚨 {$tipo} - {$placas}")
             ->greeting("Hola {$notifiable->name}")
             ->line("Se detectó una desviación de rendimiento en un vehículo.")
+            ->line("Tipo de alerta: {$tipo}")
             ->line("Vehículo: {$placas}")
             ->line("Rendimiento detectado: {$a->rendimiento_detectado} km/L")
             ->line("Rendimiento óptimo: {$a->rendimiento_optimo} km/L")

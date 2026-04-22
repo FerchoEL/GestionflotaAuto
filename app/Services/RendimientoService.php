@@ -11,6 +11,8 @@ use Illuminate\Support\Facades\DB;
 
 class RendimientoService
 {
+    private const UMBRAL_AUMENTO_ANORMAL_PCT = 40;
+
     /**
      * Procesa una carga de combustible y calcula el rendimiento.
      */
@@ -92,30 +94,45 @@ class RendimientoService
             ?? 0;
 
         $umbralMinimo = $vehiculo->rendimiento_optimo_km_l * (1 - ($tolerancia / 100));
+        $umbralMaximo = $vehiculo->rendimiento_optimo_km_l * (1 + (self::UMBRAL_AUMENTO_ANORMAL_PCT / 100));
+
+        $tipoAlerta = null;
+        $umbralAplicado = null;
 
         if ($rendimiento < $umbralMinimo) {
-            // Evitar alertas duplicadas por la misma carga
-            if (AlertaRendimiento::where('carga_id', $carga->id)->exists()) {
-                return;
-            }
-
-            // Responsable vigente: ordenar por fecha_inicio
-            $responsableActivo = $vehiculo->responsables()
-                ->where('activo', true)
-                ->orderByDesc('fecha_inicio')
-                ->first();
-
-            AlertaRendimiento::create([
-                'vehiculo_id' => $vehiculo->id,
-                'responsable_user_id' => optional($responsableActivo)->responsable_user_id,
-                'carga_id' => $carga->id,
-                'rendimiento_detectado' => $rendimiento,
-                'rendimiento_optimo' => $vehiculo->rendimiento_optimo_km_l,
-                'umbral_aplicado' => $umbralMinimo,
-                'estatus' => 'Abierta',
-                'fecha_alerta' => now(),
-            ]);
+            $tipoAlerta = 'bajo_rendimiento';
+            $umbralAplicado = $umbralMinimo;
+        } elseif ($rendimiento > $umbralMaximo) {
+            $tipoAlerta = 'rendimiento_anormal_alto';
+            $umbralAplicado = $umbralMaximo;
         }
+
+        if (! $tipoAlerta) {
+            return;
+        }
+
+        // Evitar alertas duplicadas por la misma carga
+        if (AlertaRendimiento::where('carga_id', $carga->id)->exists()) {
+            return;
+        }
+
+        // Responsable vigente: ordenar por fecha_inicio
+        $responsableActivo = $vehiculo->responsables()
+            ->where('activo', true)
+            ->orderByDesc('fecha_inicio')
+            ->first();
+
+        AlertaRendimiento::create([
+            'vehiculo_id' => $vehiculo->id,
+            'responsable_user_id' => optional($responsableActivo)->responsable_user_id,
+            'carga_id' => $carga->id,
+            'tipo' => $tipoAlerta,
+            'rendimiento_detectado' => $rendimiento,
+            'rendimiento_optimo' => $vehiculo->rendimiento_optimo_km_l,
+            'umbral_aplicado' => $umbralAplicado,
+            'estatus' => 'Abierta',
+            'fecha_alerta' => now(),
+        ]);
     }
 
     protected function obtenerCargaAnterior(CargaCombustible $carga): ?CargaCombustible

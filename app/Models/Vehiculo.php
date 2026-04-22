@@ -85,6 +85,11 @@ class Vehiculo extends Model
         return $this->hasMany(Rendimiento::class, 'vehiculo_id', 'id');
     }
 
+    public function documentos()
+    {
+        return $this->hasMany(VehiculoDocumento::class, 'vehiculo_id', 'id');
+    }
+
     public function fondeos()
     {
         return $this->hasMany(Fondeo::class, 'vehiculo_id', 'id');

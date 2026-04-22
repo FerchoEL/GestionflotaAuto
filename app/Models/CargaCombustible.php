@@ -21,13 +21,19 @@ class CargaCombustible extends Model
         'foto_bomba_path',
         'precio_litro',
         'cuenta_analitica_id',
+        'es_extemporanea',
+        'motivo_correccion',
+        'registrada_por_user_id',
+        'fecha_registro_real',
     ];
 
     protected $casts = [
         'fecha_carga' => 'datetime',
         'litros' => 'decimal:2',
         'importe' => 'decimal:4',
-        'precio_litro' => 'decimal:2'
+        'precio_litro' => 'decimal:2',
+        'es_extemporanea' => 'boolean',
+        'fecha_registro_real' => 'datetime',
     ];
 
     public function scopeOrderedChronologically(Builder $query): Builder
@@ -52,6 +58,11 @@ class CargaCombustible extends Model
     public function usuario()
     {
         return $this->belongsTo(User::class, 'user_id', 'id');
+    }
+
+    public function registradaPor()
+    {
+        return $this->belongsTo(User::class, 'registrada_por_user_id', 'id');
     }
 
     public function rendimiento()
