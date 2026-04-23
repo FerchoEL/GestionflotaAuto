@@ -6,6 +6,7 @@ use App\Filament\Pages\FondeoDashboard;
 use App\Filament\Pages\MisVehiculos;
 use App\Filament\Pages\RegistrarCargaExtemporanea;
 use App\Filament\Pages\ReporteCombustible;
+use App\Filament\Resources\AlertaDocumentoResource;
 use App\Filament\Resources\AlertaRendimientoResource;
 use App\Filament\Resources\CargaCombustibleResource;
 use App\Filament\Resources\CentroCostoResource;
@@ -29,6 +30,7 @@ use App\Filament\Resources\VehiculoResource;
 use App\Filament\Resources\VehiculoResponsableResource;
 use App\Filament\Resources\VehiculoTarjetaResource;
 use App\Models\AlertaRendimiento;
+use App\Models\AlertaDocumento;
 use App\Models\CargaCombustible;
 use App\Models\CuentaAnalitica;
 use App\Models\Departamento;
@@ -132,6 +134,12 @@ class Sidebar extends Component
                         ),
                     ]),
                     $this->buildSection('Documentos por unidad', 'heroicon-o-document-duplicate', [
+                        $this->resourceItem(
+                            'Alertas de documentos',
+                            'heroicon-o-exclamation-circle',
+                            AlertaDocumentoResource::class,
+                            AlertaDocumento::class,
+                        ),
                         $this->resourceItem(
                             'Documentos por vehículo',
                             'heroicon-o-folder-open',

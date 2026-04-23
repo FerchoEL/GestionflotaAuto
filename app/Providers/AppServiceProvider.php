@@ -3,8 +3,10 @@
 namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
+use App\Models\AlertaDocumento;
 use App\Models\AlertaRendimiento;
 use App\Models\AlertaFondeo;
+use App\Observers\AlertaDocumentoObserver;
 use App\Observers\AlertaRendimientoObserver;
 use App\Observers\AlertaFondeoObserver;
 
@@ -43,6 +45,7 @@ class AppServiceProvider extends ServiceProvider
             'heif',
         ]);
 
+        AlertaDocumento::observe(AlertaDocumentoObserver::class);
         AlertaRendimiento::observe(AlertaRendimientoObserver::class);
         AlertaFondeo::observe(AlertaFondeoObserver::class);
     }

@@ -51,10 +51,31 @@ class VehiculoDocumento extends Model
             return 'danger';
         }
 
-        if (now()->diffInDays($this->fecha_vencimiento, false) <= 15) {
+        $diasAlertaPrevia = (int) ($this->tipoDocumento?->dias_alerta_previa ?? 15);
+
+        if (now()->diffInDays($this->fecha_vencimiento, false) <= $diasAlertaPrevia) {
             return 'warning';
         }
 
         return 'success';
+    }
+
+    public function estadoAlertaDocumento(): ?string
+    {
+        if (! $this->requiereVigencia() || ! $this->fecha_vencimiento) {
+            return null;
+        }
+
+        if ($this->fecha_vencimiento->isPast()) {
+            return 'vencido';
+        }
+
+        $diasAlertaPrevia = (int) ($this->tipoDocumento?->dias_alerta_previa ?? 15);
+
+        if (now()->diffInDays($this->fecha_vencimiento, false) <= $diasAlertaPrevia) {
+            return 'por_vencer';
+        }
+
+        return null;
     }
 }
