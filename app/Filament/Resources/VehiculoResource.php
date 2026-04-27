@@ -130,7 +130,9 @@ class VehiculoResource extends Resource
                 Forms\Components\TextInput::make('tolerancia_pct')->numeric(),
                 Forms\Components\Select::make('responsable_user_id')
                 ->label('Responsable del vehículo')
-                ->options(User::role('responsable')->pluck('name', 'id'))
+                ->options(User::whereHas('roles', function($q) {
+                    $q->whereIn('name', ['responsable', 'activos']);
+                })->pluck('name', 'id'))
                 ->required()
                 ->dehydrated(false)
                 ->afterStateHydrated(function ($component, $record) {

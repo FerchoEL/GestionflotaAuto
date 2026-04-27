@@ -74,9 +74,7 @@ class Sidebar extends Component
                 title: 'Combustible',
                 icon: 'heroicon-o-credit-card',
                 sections: [
-                    $this->buildSection('Flota', 'heroicon-o-truck', [
-                        $this->resourceItem('Vehículos', 'heroicon-o-truck', VehiculoResource::class, Vehiculo::class),
-                    ]),
+                    
                     $this->buildSection('Operación', 'heroicon-o-bolt', [
                         $this->pageItem('Mis Vehículos', 'heroicon-o-clipboard-document-list', MisVehiculos::class, Vehiculo::class),
                         $this->pageItem('Fondeo Operativo', 'heroicon-o-banknotes', FondeoDashboard::class, Fondeo::class),
@@ -161,12 +159,15 @@ class Sidebar extends Component
                         $this->resourceItem('Estatus de vehículos', 'heroicon-o-archive-box', VehiculoEstatusResource::class, VehiculoEstatus::class),
                         $this->resourceItem('Roles', 'heroicon-o-shield-check', RoleResource::class, Role::class),
                     ]),
+                    $this->buildSection('Flota', 'heroicon-o-truck', [
+                        $this->resourceItem('Vehículos', 'heroicon-o-truck', VehiculoResource::class, Vehiculo::class),
+                    ]),
                     $this->buildSection('Configuración', 'heroicon-o-cog-6-tooth', [
                         $this->resourceItem('Usuarios', 'heroicon-o-users', UserResource::class, User::class),
                         $this->resourceItem('Asig. Litros de Fondeo', 'heroicon-o-banknotes', VehiculoFondeoConfigResource::class, VehiculoFondeoConfig::class),
                         $this->resourceItem('Asig. Tarjeta a Vehículo', 'heroicon-o-credit-card', VehiculoTarjetaResource::class, VehiculoTarjeta::class),
                         $this->resourceItem('Asig. Responsables a Vehículo', 'heroicon-o-shield-check', VehiculoResponsableResource::class, VehiculoResponsable::class),
-                        $this->resourceItem('Asig. Vehículo a operador', 'heroicon-o-user', VehiculoChoferResource::class, VehiculoChofer::class),
+                        $this->resourceItem('Asig. Vehículo a Operador', 'heroicon-o-user', VehiculoChoferResource::class, VehiculoChofer::class),
                         $this->resourceItem('Asig. Vehículo a Localidad', 'heroicon-o-map', VehiculoLocalidadResource::class, VehiculoLocalidad::class),
                         $this->resourceItem('Asig. Vehículo a Departamento', 'heroicon-o-building-office', VehiculoDepartamentoResource::class, VehiculoDepartamento::class),
                         $this->resourceItem('Asig. Cuenta Analítica', 'heroicon-o-calculator', VehiculoCuentaAnaliticaResource::class, VehiculoCuentaAnalitica::class),
