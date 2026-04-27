@@ -241,7 +241,7 @@ class FondeoDashboard extends Page implements HasTable
 
         if ($saldo <= 0) return 'heroicon-o-exclamation-triangle';
         if ($porcentaje < 40) return 'heroicon-o-exclamation-circle';
-        if ($porcentaje < 70) return 'heroicon-o-exclamation';
+        if ($porcentaje < 70) return 'heroicon-o-exclamation-triangle';
         return 'heroicon-o-check-circle';
     }
 

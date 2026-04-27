@@ -2,7 +2,7 @@
 
 namespace App\Filament\Resources;
 
-use App\Filament\Resources\AsegoradoraResource\Pages;
+use App\Filament\Resources\AseguradoraResource\Pages;
 use App\Models\Aseguradora;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
@@ -14,7 +14,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Table;
 
-class AsegoradoraResource extends Resource
+class AseguradoraResource extends Resource
 {
     protected static ?string $model = Aseguradora::class;
 
@@ -96,7 +96,7 @@ class AsegoradoraResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListAsegoradores::route('/'),
+            'index' => Pages\ListAseguradoras::route('/'),
             'create' => Pages\CreateAseguradora::route('/create'),
             'edit' => Pages\EditAseguradora::route('/{record}/edit'),
         ];

@@ -8,6 +8,7 @@ use App\Filament\Pages\RegistrarCargaExtemporanea;
 use App\Filament\Pages\ReporteCombustible;
 use App\Filament\Resources\AlertaDocumentoResource;
 use App\Filament\Resources\AlertaRendimientoResource;
+use App\Filament\Resources\AseguradoraResource;
 use App\Filament\Resources\CargaCombustibleResource;
 use App\Filament\Resources\CentroCostoResource;
 use App\Filament\Resources\DepartamentoResource;
@@ -31,6 +32,7 @@ use App\Filament\Resources\VehiculoResponsableResource;
 use App\Filament\Resources\VehiculoTarjetaResource;
 use App\Models\AlertaRendimiento;
 use App\Models\AlertaDocumento;
+use App\Models\Aseguradora;
 use App\Models\CargaCombustible;
 use App\Models\CuentaAnalitica;
 use App\Models\Departamento;
@@ -151,6 +153,7 @@ class Sidebar extends Component
                 icon: 'heroicon-o-cog-6-tooth',
                 sections: [
                     $this->buildSection('Catálogos', 'heroicon-o-squares-2x2', [
+                        $this->resourceItem('Aseguradoras', 'heroicon-o-shield-check', AseguradoraResource::class, Aseguradora::class),
                         $this->resourceItem('Cuentas Analíticas', 'heroicon-o-currency-dollar', CentroCostoResource::class, CuentaAnalitica::class),
                         $this->resourceItem('Departamentos', 'heroicon-o-building-office-2', DepartamentoResource::class, Departamento::class),
                         $this->resourceItem('Localidades', 'heroicon-o-map-pin', LocalidadResource::class, Localidad::class),

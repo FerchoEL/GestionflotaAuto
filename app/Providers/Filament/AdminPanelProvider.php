@@ -47,6 +47,7 @@ class AdminPanelProvider extends PanelProvider
                 'Operación',
                 'Control y Análisis',
                 'Configuración Operativa',
+                'Configuración',
             ])
             ->renderHook(
                 PanelsRenderHook::SIDEBAR_NAV_START,
