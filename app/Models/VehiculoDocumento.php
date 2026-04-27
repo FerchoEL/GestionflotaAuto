@@ -36,6 +36,11 @@ class VehiculoDocumento extends Model
         return $this->belongsTo(TipoDocumento::class, 'tipo_documento_id');
     }
 
+    public function polizaSeguro()
+    {
+        return $this->hasOne(PolizaSeguro::class, 'vehiculo_documento_id');
+    }
+
     public function requiereVigencia(): bool
     {
         return (bool) $this->tipoDocumento?->requiere_vigencia;

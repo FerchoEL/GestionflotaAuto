@@ -46,6 +46,10 @@ class TipoDocumentoResource extends Resource
 
             Toggle::make('es_obligatorio')
                 ->label('Es obligatorio'),
+
+            Toggle::make('es_poliza_seguro')
+                ->label('Es póliza de seguro')
+                ->helperText('Marcar si este documento requiere campos especiales de póliza (aseguradora, costo, tipo de pago)'),
         ]);
     }
 
@@ -68,6 +72,10 @@ class TipoDocumentoResource extends Resource
 
                 IconColumn::make('es_obligatorio')
                     ->label('Obligatorio')
+                    ->boolean(),
+
+                IconColumn::make('es_poliza_seguro')
+                    ->label('Póliza Seguro')
                     ->boolean(),
             ])
             ->defaultSort('nombre')

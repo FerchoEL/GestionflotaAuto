@@ -138,10 +138,11 @@ Exportar Excel
 <th>Vehículo</th>
 <th>No Económico</th>
 <th>Tarjeta</th>
-<th>KM</th>
+<th>Odómetro</th>
 <th>KM recorridos</th>
 <th>Litros</th>
-<th>Rendimiento</th>
+<th>Rendimiento Real</th>
+<th>Rendimiento Óptimo</th>
 <th>Precio/L</th>
 <th>Importe</th>
 <th>Cuenta Analítica</th>
@@ -187,6 +188,8 @@ Exportar Excel
 
 </td>
 
+<td>{{ number_format($v->rendimiento_optimo_km_l,2) }}</td>
+
 <td>-</td>
 
 <td>{{ number_format($v->importe,2) }}</td>
@@ -223,6 +226,8 @@ Exportar Excel
 <td>{{ $c->litros }}</td>
 
 <td>{{ $c->rendimiento?->rendimiento_km_l }}</td>
+
+<td>{{ number_format($c->vehiculo?->rendimiento_optimo_km_l,2) }}</td>
 
 <td>{{ $c->precio_litro }}</td>
 
@@ -270,6 +275,8 @@ TOTALES
 {{ number_format($this->rendimientoGlobal(),2) }}
 
 </td>
+
+<td></td>
 
 <td></td>
 

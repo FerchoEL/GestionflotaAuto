@@ -3,13 +3,17 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\VehiculoDocumentoResource\Pages;
+use App\Models\Aseguradora;
 use App\Models\TipoDocumento;
+use App\Models\TipoPago;
 use App\Models\Vehiculo;
 use App\Models\VehiculoDocumento;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\Section;
 use Filament\Forms\Form;
 use Filament\Forms\Get;
 use Filament\Resources\Resource;
@@ -88,6 +92,40 @@ class VehiculoDocumentoResource extends Resource
                 ->label('Fecha de vencimiento')
                 ->visible(fn (Get $get): bool => static::tipoDocumentoRequiereVigencia($get('tipo_documento_id')))
                 ->required(fn (Get $get): bool => static::tipoDocumentoRequiereVigencia($get('tipo_documento_id'))),
+
+            // Sección específica para pólizas de seguro
+            Section::make('Información de la Póliza de Seguro')
+                ->visible(fn (Get $get): bool => static::esPolizaSeguro($get('tipo_documento_id')))
+                ->schema([
+                    Select::make('poliza_aseguradora_id')
+                        ->options(fn () => Aseguradora::where('activo', true)
+                            ->orderBy('nombre')
+                            ->pluck('nombre', 'id'))
+                        ->searchable()
+                        ->preload()
+                        ->label('Aseguradora')
+                        ->required(fn (Get $get): bool => static::esPolizaSeguro($get('tipo_documento_id'))),
+
+                    TextInput::make('poliza_costo')
+                        ->numeric()
+                        ->prefix('$')
+                        ->step('0.01')
+                        ->label('Costo de la póliza')
+                        ->required(fn (Get $get): bool => static::esPolizaSeguro($get('tipo_documento_id'))),
+
+                    Select::make('poliza_tipo_pago_id')
+                        ->options(fn () => TipoPago::orderBy('nombre')
+                            ->pluck('nombre', 'id'))
+                        ->searchable()
+                        ->preload()
+                        ->label('Tipo de pago')
+                        ->required(fn (Get $get): bool => static::esPolizaSeguro($get('tipo_documento_id'))),
+
+                    Textarea::make('poliza_notas')
+                        ->maxLength(500)
+                        ->rows(3)
+                        ->label('Notas'),
+                ]),
         ]);
     }
 
@@ -239,5 +277,16 @@ class VehiculoDocumentoResource extends Resource
         return (bool) TipoDocumento::query()
             ->whereKey($tipoDocumentoId)
             ->value('requiere_vigencia');
+    }
+
+    protected static function esPolizaSeguro(?string $tipoDocumentoId): bool
+    {
+        if (! filled($tipoDocumentoId)) {
+            return false;
+        }
+
+        return (bool) TipoDocumento::query()
+            ->whereKey($tipoDocumentoId)
+            ->value('es_poliza_seguro');
     }
 }

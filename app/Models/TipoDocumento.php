@@ -14,6 +14,7 @@ class TipoDocumento extends Model
         'requiere_vigencia',
         'dias_alerta_previa',
         'es_obligatorio',
+        'es_poliza_seguro',
     ];
 
     protected function casts(): array
@@ -21,6 +22,7 @@ class TipoDocumento extends Model
         return [
             'requiere_vigencia' => 'boolean',
             'es_obligatorio' => 'boolean',
+            'es_poliza_seguro' => 'boolean',
         ];
     }
 

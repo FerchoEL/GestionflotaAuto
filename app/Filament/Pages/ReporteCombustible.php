@@ -107,6 +107,7 @@ class ReporteCombustible extends Page
                 vehiculos.id as vehiculo_id,
                 vehiculos.placas,
                 vehiculos.numero_economico,
+                vehiculos.rendimiento_optimo_km_l,
                 SUM(rendimientos.km_recorridos) as km_recorridos,
                 SUM(carga_combustibles.litros) as litros,
                 SUM(carga_combustibles.importe) as importe
@@ -114,7 +115,8 @@ class ReporteCombustible extends Page
             ->groupBy(
                 'vehiculos.id',
                 'vehiculos.placas',
-                'vehiculos.numero_economico'
+                'vehiculos.numero_economico',
+                'vehiculos.rendimiento_optimo_km_l'
             )
             ->get();
     }

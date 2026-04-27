@@ -65,10 +65,10 @@ class Sidebar extends Component
 
     protected function modules(): array
     {
-        return [
+        $modules = [
             $this->buildModule(
                 id: 'modulo-combustible',
-                label: 'MÓDULO 1',
+                label: 'MÓDULO 1 Combustible',
                 title: 'Combustible',
                 icon: 'heroicon-o-credit-card',
                 sections: [
@@ -98,30 +98,12 @@ class Sidebar extends Component
                     $this->buildSection('Reportes', 'heroicon-o-chart-bar', [
                         $this->pageItem('Reporte Combustible', 'heroicon-o-presentation-chart-line', ReporteCombustible::class, CargaCombustible::class),
                     ]),
-                    $this->buildSection('Catálogos', 'heroicon-o-squares-2x2', [
-                        $this->resourceItem('Cuentas Analíticas', 'heroicon-o-currency-dollar', CentroCostoResource::class, CuentaAnalitica::class),
-                        $this->resourceItem('Departamentos', 'heroicon-o-building-office-2', DepartamentoResource::class, Departamento::class),
-                        $this->resourceItem('Localidades', 'heroicon-o-map-pin', LocalidadResource::class, Localidad::class),
-                        $this->resourceItem('Tipos de vehículo', 'heroicon-o-tag', TipoVehiculoResource::class, TipoVehiculo::class),
-                        $this->resourceItem('Estatus de vehículos', 'heroicon-o-archive-box', VehiculoEstatusResource::class, VehiculoEstatus::class),
-                        $this->resourceItem('Roles', 'heroicon-o-shield-check', RoleResource::class, Role::class),
-                    ]),
-                    $this->buildSection('Configuración', 'heroicon-o-cog-6-tooth', [
-                        $this->resourceItem('Usuarios', 'heroicon-o-users', UserResource::class, User::class),
-                        $this->resourceItem('Asig. Litros de Fondeo', 'heroicon-o-banknotes', VehiculoFondeoConfigResource::class, VehiculoFondeoConfig::class),
-                        $this->resourceItem('Asig. Tarjeta a Vehículo', 'heroicon-o-credit-card', VehiculoTarjetaResource::class, VehiculoTarjeta::class),
-                        $this->resourceItem('Asig. Responsables a Vehículo', 'heroicon-o-shield-check', VehiculoResponsableResource::class, VehiculoResponsable::class),
-                        $this->resourceItem('Asig. Vehículo a operador', 'heroicon-o-user', VehiculoChoferResource::class, VehiculoChofer::class),
-                        $this->resourceItem('Asig. Vehículo a Localidad', 'heroicon-o-map', VehiculoLocalidadResource::class, VehiculoLocalidad::class),
-                        $this->resourceItem('Asig. Vehículo a Departamento', 'heroicon-o-building-office', VehiculoDepartamentoResource::class, VehiculoDepartamento::class),
-                        $this->resourceItem('Asig. Cuenta Analítica', 'heroicon-o-calculator', VehiculoCuentaAnaliticaResource::class, VehiculoCuentaAnalitica::class),
-                        $this->resourceItem('Fondeo manual', 'heroicon-o-wallet', FondeoResource::class, Fondeo::class),
-                    ]),
+                    
                 ],
             ),
             $this->buildModule(
                 id: 'modulo-documentacion',
-                label: 'MÓDULO 2',
+                label: 'MÓDULO 2 Documentación',
                 title: 'Documentación',
                 icon: 'heroicon-o-folder-open',
                 sections: [
@@ -152,13 +134,47 @@ class Sidebar extends Component
             ),
             $this->buildModule(
                 id: 'modulo-mantenimiento',
-                label: 'MÓDULO 3',
+                label: 'MÓDULO 3 Mantenimiento',
                 title: 'Mantenimiento',
                 icon: 'heroicon-o-wrench-screwdriver',
                 sections: [],
                 description: 'Disponible para futuras secciones.',
             ),
         ];
+
+        // Agregar módulo de configuración solo si el usuario es admin o activos
+        if ($this->canAccessConfigurationModule()) {
+            $modules[] = $this->buildModule(
+                id: 'modulo-configuracion',
+                label: 'CONFIGURACIÓN',
+                title: 'Configuracion',
+                icon: 'heroicon-o-cog-6-tooth',
+                sections: [
+                    $this->buildSection('Catálogos', 'heroicon-o-squares-2x2', [
+                        $this->resourceItem('Cuentas Analíticas', 'heroicon-o-currency-dollar', CentroCostoResource::class, CuentaAnalitica::class),
+                        $this->resourceItem('Departamentos', 'heroicon-o-building-office-2', DepartamentoResource::class, Departamento::class),
+                        $this->resourceItem('Localidades', 'heroicon-o-map-pin', LocalidadResource::class, Localidad::class),
+                        $this->resourceItem('Tipos de vehículo', 'heroicon-o-tag', TipoVehiculoResource::class, TipoVehiculo::class),
+                        $this->resourceItem('Estatus de vehículos', 'heroicon-o-archive-box', VehiculoEstatusResource::class, VehiculoEstatus::class),
+                        $this->resourceItem('Roles', 'heroicon-o-shield-check', RoleResource::class, Role::class),
+                    ]),
+                    $this->buildSection('Configuración', 'heroicon-o-cog-6-tooth', [
+                        $this->resourceItem('Usuarios', 'heroicon-o-users', UserResource::class, User::class),
+                        $this->resourceItem('Asig. Litros de Fondeo', 'heroicon-o-banknotes', VehiculoFondeoConfigResource::class, VehiculoFondeoConfig::class),
+                        $this->resourceItem('Asig. Tarjeta a Vehículo', 'heroicon-o-credit-card', VehiculoTarjetaResource::class, VehiculoTarjeta::class),
+                        $this->resourceItem('Asig. Responsables a Vehículo', 'heroicon-o-shield-check', VehiculoResponsableResource::class, VehiculoResponsable::class),
+                        $this->resourceItem('Asig. Vehículo a operador', 'heroicon-o-user', VehiculoChoferResource::class, VehiculoChofer::class),
+                        $this->resourceItem('Asig. Vehículo a Localidad', 'heroicon-o-map', VehiculoLocalidadResource::class, VehiculoLocalidad::class),
+                        $this->resourceItem('Asig. Vehículo a Departamento', 'heroicon-o-building-office', VehiculoDepartamentoResource::class, VehiculoDepartamento::class),
+                        $this->resourceItem('Asig. Cuenta Analítica', 'heroicon-o-calculator', VehiculoCuentaAnaliticaResource::class, VehiculoCuentaAnalitica::class),
+                        $this->resourceItem('Fondeo manual', 'heroicon-o-wallet', FondeoResource::class, Fondeo::class),
+                    ]),
+                ],
+                description: 'Configuración del sistema.',
+            );
+        }
+
+        return $modules;
     }
 
     protected function buildModule(
@@ -181,6 +197,22 @@ class Sidebar extends Component
             'sections' => $visibleSections,
             'active' => $isActive,
         ];
+    }
+
+    /**
+     * Verifica si el usuario autenticado puede acceder al módulo de configuración.
+     * Solo usuarios con roles 'admin' o 'activos' pueden acceder.
+     */
+    protected function canAccessConfigurationModule(): bool
+    {
+        $user = Auth::user();
+
+        if (! $user) {
+            return false;
+        }
+
+        // Permitir acceso solo a usuarios con rol 'admin' o 'activos'
+        return $user->hasRole(['admin', 'activos']);
     }
 
     protected function buildSection(string $title, string $icon, array $items): array
