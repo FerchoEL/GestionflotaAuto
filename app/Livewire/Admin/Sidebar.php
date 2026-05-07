@@ -3,6 +3,7 @@
 namespace App\Livewire\Admin;
 
 use App\Filament\Pages\FondeoDashboard;
+use App\Filament\Pages\FondeoFinancieroDashboard;
 use App\Filament\Pages\MisVehiculos;
 use App\Filament\Pages\RegistrarCargaExtemporanea;
 use App\Filament\Pages\ReporteCombustible;
@@ -11,6 +12,7 @@ use App\Filament\Resources\AlertaRendimientoResource;
 use App\Filament\Resources\AseguradoraResource;
 use App\Filament\Resources\CargaCombustibleResource;
 use App\Filament\Resources\CentroCostoResource;
+use App\Filament\Resources\CuentaConcentradoraResource;
 use App\Filament\Resources\DepartamentoResource;
 use App\Filament\Resources\FondeoResource;
 use App\Filament\Resources\LocalidadResource;
@@ -78,6 +80,7 @@ class Sidebar extends Component
                     $this->buildSection('Operación', 'heroicon-o-bolt', [
                         $this->pageItem('Mis Vehículos', 'heroicon-o-clipboard-document-list', MisVehiculos::class, Vehiculo::class),
                         $this->pageItem('Fondeo Operativo', 'heroicon-o-banknotes', FondeoDashboard::class, Fondeo::class),
+                        $this->pageItem('Fondeo Financiero', 'heroicon-o-credit-card', FondeoFinancieroDashboard::class, TarjetaCombustible::class),
                         $this->pageItem('Carga extemporánea', 'heroicon-o-clock', RegistrarCargaExtemporanea::class, CargaCombustible::class),
                         $this->resourceItem('Carga de combustible', 'heroicon-o-beaker', CargaCombustibleResource::class, CargaCombustible::class),
                         $this->resourceItem('Tarjetas de combustible', 'heroicon-o-credit-card', TarjetaCombustibleResource::class, TarjetaCombustible::class),
@@ -153,6 +156,7 @@ class Sidebar extends Component
                     $this->buildSection('Catálogos', 'heroicon-o-squares-2x2', [
                         $this->resourceItem('Aseguradoras', 'heroicon-o-shield-check', AseguradoraResource::class, Aseguradora::class),
                         $this->resourceItem('Cuentas Analíticas', 'heroicon-o-currency-dollar', CentroCostoResource::class, CuentaAnalitica::class),
+                        $this->resourceItem('Cuentas Concentradoras', 'heroicon-o-building-library', CuentaConcentradoraResource::class, \App\Models\CuentaConcentradora::class),
                         $this->resourceItem('Departamentos', 'heroicon-o-building-office-2', DepartamentoResource::class, Departamento::class),
                         $this->resourceItem('Localidades', 'heroicon-o-map-pin', LocalidadResource::class, Localidad::class),
                         $this->resourceItem('Tipos de vehículo', 'heroicon-o-tag', TipoVehiculoResource::class, TipoVehiculo::class),

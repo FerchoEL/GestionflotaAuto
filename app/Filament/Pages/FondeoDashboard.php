@@ -2,10 +2,9 @@
 
 namespace App\Filament\Pages;
 
-use App\Models\Vehiculo;
-use App\Models\CargaCombustible;
 use App\Models\Fondeo;
-use App\Models\VehiculoFondeoConfig;
+use App\Models\Vehiculo;
+use App\Services\TarjetaSaldoService;
 use Filament\Pages\Page;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -14,7 +13,6 @@ use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
 use Filament\Notifications\Notification;
-use Illuminate\Database\Eloquent\Model; 
 
 class FondeoDashboard extends Page implements HasTable
 {
@@ -66,20 +64,18 @@ class FondeoDashboard extends Page implements HasTable
                 ->label('Asignado (L)')
                 ->state(fn ($record) => $this->obtenerAsignado($record)),
 
-            /* Tables\Columns\TextColumn::make('fondeado_total')
-                ->label('Fondeado Total (L)')
-                ->state(fn ($record) => $this->obtenerFondeadoTotal($record)),
-
-            Tables\Columns\TextColumn::make('consumido_total')
-                ->label('Consumido Total (L)')
-                ->state(fn ($record) => $this->obtenerConsumidoTotal($record)), */
-
             Tables\Columns\TextColumn::make('saldo_actual')
                 ->label('Saldo Operativo (L)')
                 ->state(fn ($record) => $this->calcularSaldo($record))
                 ->badge()
                 ->color(fn ($record) => $this->colorSemaforo($record))
                 ->icon(fn ($record) => $this->iconoSemaforo($record)),
+
+            Tables\Columns\TextColumn::make('impacto_one_card')
+                ->label('Impacto One Card (L)')
+                ->state(fn ($record) => number_format($this->obtenerImpactoOneCard($record), 2))
+                ->badge()
+                ->color(fn ($record) => $this->obtenerImpactoOneCard($record) >= 0 ? 'success' : 'danger'),
 
             Tables\Columns\TextColumn::make('porcentaje')
                 ->label('% Fondo Disponible')
@@ -120,7 +116,7 @@ class FondeoDashboard extends Page implements HasTable
                     TextInput::make('litros_fondeados')
                         ->numeric()
                         ->required()
-                        ->minValue(1)
+                        ->minValue(0.01)
                         ->maxValue(fn ($record) =>
                             $this->calcularPendiente($record)
                         )
@@ -178,86 +174,62 @@ class FondeoDashboard extends Page implements HasTable
 
     protected function obtenerAsignado($record)
     {
-        return optional(
-            VehiculoFondeoConfig::where('vehiculo_id', $record->id)
-                ->where('activo', true)
-                ->first()
-        )->litros_asignados ?? 0;
+        return $this->saldoService()->obtenerAsignadoLitrosVehiculo($record);
     }
 
     protected function obtenerFondeadoTotal($record)
     {
-        return Fondeo::where('vehiculo_id', $record->id)
-            ->sum('litros_fondeados');
+        return $this->saldoService()->obtenerFondeadoLitrosVehiculo($record);
     }
 
     protected function obtenerConsumidoTotal($record)
     {
-        return CargaCombustible::where('vehiculo_id', $record->id)
-            ->sum('litros');
+        return $this->saldoService()->obtenerConsumidoLitrosVehiculo($record);
     }
 
     protected function calcularSaldo($record)
     {
-        return $this->obtenerFondeadoTotal($record)
-            - $this->obtenerConsumidoTotal($record);
+        return $this->saldoService()->obtenerSaldoDisponibleLitrosVehiculo($record);
+    }
+
+    protected function obtenerImpactoOneCard($record)
+    {
+        return $this->saldoService()->obtenerImpactoOneCardLitrosVehiculo($record);
     }
 
     protected function calcularPendiente($record)
     {
-        $asignado = $this->obtenerAsignado($record);
-        $saldo = $this->calcularSaldo($record);
-
-        return max($asignado - $saldo, 0);
+        return $this->saldoService()->obtenerPendienteLitrosVehiculo($record);
     }
 
     protected function calcularPorcentaje($record)
     {
-        $asignado = $this->obtenerAsignado($record);
-        $saldo = $this->calcularSaldo($record);
-
-        if ($asignado <= 0) {
-            return 0;
-        }
-
-        return round(($saldo / $asignado) * 100, 0);
+        return $this->saldoService()->obtenerPorcentajeVehiculo($record);
     }
 
     protected function colorSemaforo($record)
     {
-        $porcentaje = $this->calcularPorcentaje($record);
-        $saldo = $this->calcularSaldo($record);
-
-        if ($saldo <= 0) return 'danger';
-        if ($porcentaje < 40) return 'danger';
-        if ($porcentaje < 70) return 'warning';
-        return 'success';
+        return $this->saldoService()->obtenerColorSemaforoVehiculo($record);
     }
 
     protected function iconoSemaforo($record)
     {
-        $porcentaje = $this->calcularPorcentaje($record);
-        $saldo = $this->calcularSaldo($record);
-
-        if ($saldo <= 0) return 'heroicon-o-exclamation-triangle';
-        if ($porcentaje < 40) return 'heroicon-o-exclamation-circle';
-        if ($porcentaje < 70) return 'heroicon-o-exclamation-triangle';
-        return 'heroicon-o-check-circle';
+        return $this->saldoService()->obtenerIconoSemaforoVehiculo($record);
     }
 
     protected function obtenerUltimoPrecioLitro($record)
     {
-        return CargaCombustible::where('vehiculo_id', $record->id)
-            ->whereNotNull('precio_litro')
-            ->orderByDesc('fecha_carga')
-            ->value('precio_litro') ?? 0;
+        return $this->saldoService()->obtenerUltimoPrecioLitroVehiculo($record);
     }
 
     protected function tieneConfigActiva($record)
     {
-        return VehiculoFondeoConfig::where('vehiculo_id', $record->id)
-            ->where('activo', true)
-            ->exists();
+        return $this->obtenerAsignado($record) > 0;
+    }
+
+    protected function saldoService(): TarjetaSaldoService
+    {
+        return app(TarjetaSaldoService::class);
     }
 
     /* ==========================================================

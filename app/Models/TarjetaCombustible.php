@@ -25,7 +25,12 @@ class TarjetaCombustible extends Model
     {
         return $this->hasOne(VehiculoTarjeta::class)
             ->where('activo', true)
-            ->orderByDesc('fecha_inicio')   
+            ->orderByDesc('fecha_inicio')
             ->orderByDesc('id');
+    }
+
+    public function saldoMovimientos()
+    {
+        return $this->hasMany(TarjetaSaldoMovimiento::class, 'tarjeta_combustible_id');
     }
 }

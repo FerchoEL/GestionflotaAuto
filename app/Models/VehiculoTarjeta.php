@@ -42,13 +42,13 @@ class VehiculoTarjeta extends Model
         });
     }
 
-    public function vehiculo()
-    {
-        return $this->belongsTo(Vehiculo::class);
-    }
-
     public function tarjeta()
     {
         return $this->belongsTo(TarjetaCombustible::class, 'tarjeta_combustible_id');
+    }
+
+    public function vehiculo()
+    {
+        return $this->belongsTo(Vehiculo::class, 'vehiculo_id');
     }
 }

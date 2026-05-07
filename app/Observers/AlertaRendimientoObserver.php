@@ -36,7 +36,7 @@ class AlertaRendimientoObserver
 
             // 2) Rol activos
             User::role('activos')->whereNotNull('email')->get()
-                ->each(function ($u) use ($notification, $alertaRendimiento) {
+                ->each(function ($u) use ($notification, $alertaRendimiento, $usuariosNotificados) {
                     if (! EmailGuard::canSend($u->email)) {
                         Log::warning('AlertaRendimiento: email bloqueado/ inválido (activos)', [
                             'alerta_id' => $alertaRendimiento->id,
@@ -51,7 +51,7 @@ class AlertaRendimientoObserver
 
             // 3) Rol admin
             User::role('admin')->whereNotNull('email')->get()
-                ->each(function ($u) use ($notification, $alertaRendimiento) {
+                ->each(function ($u) use ($notification, $alertaRendimiento, $usuariosNotificados) {
                     if (! EmailGuard::canSend($u->email)) {
                         Log::warning('AlertaRendimiento: email bloqueado/ inválido (admin)', [
                             'alerta_id' => $alertaRendimiento->id,
