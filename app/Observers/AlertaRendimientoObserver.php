@@ -8,6 +8,7 @@ use App\Notifications\AlertaRendimientoMailNotification;
 use App\Support\EmailGuard;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Collection;
 
 class AlertaRendimientoObserver
 {
@@ -20,11 +21,12 @@ class AlertaRendimientoObserver
         DB::afterCommit(function () use ($alertaRendimiento) {
 
             $notification = new AlertaRendimientoMailNotification($alertaRendimiento);
+            $usuariosNotificados = collect();
 
             // 1) Responsable directo
             $responsable = $alertaRendimiento->responsable;
             if ($responsable && EmailGuard::canSend($responsable->email)) {
-                $this->safeNotify($responsable, $notification, 'responsable', $alertaRendimiento->id);
+                $this->safeNotify($responsable, $notification, 'responsable', $alertaRendimiento->id, $usuariosNotificados);
             } else {
                 Log::warning('AlertaRendimiento: email bloqueado/ inválido (responsable)', [
                     'alerta_id' => $alertaRendimiento->id,
@@ -44,7 +46,7 @@ class AlertaRendimientoObserver
                         return;
                     }
 
-                    $this->safeNotify($u, $notification, 'activos', $alertaRendimiento->id);
+                    $this->safeNotify($u, $notification, 'activos', $alertaRendimiento->id, $usuariosNotificados);
                 });
 
             // 3) Rol admin
@@ -59,15 +61,37 @@ class AlertaRendimientoObserver
                         return;
                     }
 
-                    $this->safeNotify($u, $notification, 'admin', $alertaRendimiento->id);
+                    $this->safeNotify($u, $notification, 'admin', $alertaRendimiento->id, $usuariosNotificados);
                 });
         });
     }
 
-    private function safeNotify(User $user, AlertaRendimientoMailNotification $notification, string $grupo, int $alertaId): void
+    private function safeNotify(
+        User $user,
+        AlertaRendimientoMailNotification $notification,
+        string $grupo,
+        int $alertaId,
+        Collection $usuariosNotificados
+    ): void
     {
+        $email = mb_strtolower(trim((string) $user->email));
+
+        if ($usuariosNotificados->contains(fn (array $destinatario) => $destinatario['user_id'] === $user->id || $destinatario['email'] === $email)) {
+            Log::info('AlertaRendimiento: notificacion duplicada omitida', [
+                'alerta_id' => $alertaId,
+                'grupo' => $grupo,
+                'user_id' => $user->id,
+                'email' => $user->email,
+            ]);
+            return;
+        }
+
         try {
             $user->notify($notification);
+            $usuariosNotificados->push([
+                'user_id' => $user->id,
+                'email' => $email,
+            ]);
         } catch (\Throwable $e) {
             Log::error('AlertaRendimiento: fallo al notificar usuario', [
                 'alerta_id' => $alertaId,

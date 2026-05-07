@@ -4,10 +4,9 @@ namespace App\Filament\Pages;
 
 use Filament\Pages\Page;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Auth;
-use App\Models\CargaCombustible;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\ReporteCombustibleExport;
+use App\Services\ReporteCombustibleService;
 
 class ReporteCombustible extends Page
 {
@@ -20,63 +19,18 @@ class ReporteCombustible extends Page
     public $vehiculo_id;
     public $cuenta_analitica_id;
     public $departamento_id;
+    public $localidad_id;
     public $tipo_combustible;
 
     public $fecha_inicio;
     public $fecha_fin;
 
+    protected ?Collection $cargasReporte = null;
+
     public function mount()
     {
         $this->fecha_inicio = now()->startOfMonth()->toDateString();
         $this->fecha_fin = now()->toDateString();
-    }
-
-    /*
-    |--------------------------------------------------------------------------
-    | QUERY BASE CON FILTROS
-    |--------------------------------------------------------------------------
-    */
-
-    private function queryBase()
-    {
-        $query = CargaCombustible::query()
-            ->with([
-                'vehiculo',
-                'vehiculo.tarjetaActiva.tarjeta',
-                'vehiculo.departamentoActivo.departamento',
-                'cuentaAnalitica',
-                'rendimiento'
-            ]);
-
-        if ($this->vehiculo_id) {
-            $query->where('vehiculo_id', $this->vehiculo_id);
-        }
-
-        if ($this->cuenta_analitica_id) {
-            $query->where('cuenta_analitica_id', $this->cuenta_analitica_id);
-        }
-
-        if ($this->tipo_combustible) {
-            $query->whereHas('vehiculo', function ($q) {
-                $q->where('tipo_combustible', $this->tipo_combustible);
-            });
-        }
-
-        if ($this->departamento_id) {
-            $query->whereHas('vehiculo.departamentoActivo', function ($q) {
-                $q->where('departamento_id', $this->departamento_id);
-            });
-        }
-
-        if ($this->fecha_inicio) {
-            $query->whereDate('fecha_carga', '>=', $this->fecha_inicio);
-        }
-
-        if ($this->fecha_fin) {
-            $query->whereDate('fecha_carga', '<=', $this->fecha_fin);
-        }
-
-        return $query;
     }
 
     /*
@@ -87,9 +41,8 @@ class ReporteCombustible extends Page
 
     public function cargas(): Collection
     {
-        return $this->queryBase()
-            ->orderByDesc('fecha_carga')
-            ->get();
+        return $this->cargasReporte ??= app(ReporteCombustibleService::class)
+            ->cargasConRendimientoReal($this->filters());
     }
 
     /*
@@ -100,25 +53,8 @@ class ReporteCombustible extends Page
 
     public function resumenVehiculos(): Collection
     {
-        return $this->queryBase()
-            ->join('vehiculos', 'vehiculos.id', '=', 'carga_combustibles.vehiculo_id')
-            ->leftJoin('rendimientos', 'rendimientos.carga_id', '=', 'carga_combustibles.id')
-            ->selectRaw('
-                vehiculos.id as vehiculo_id,
-                vehiculos.placas,
-                vehiculos.numero_economico,
-                vehiculos.rendimiento_optimo_km_l,
-                SUM(rendimientos.km_recorridos) as km_recorridos,
-                SUM(carga_combustibles.litros) as litros,
-                SUM(carga_combustibles.importe) as importe
-            ')
-            ->groupBy(
-                'vehiculos.id',
-                'vehiculos.placas',
-                'vehiculos.numero_economico',
-                'vehiculos.rendimiento_optimo_km_l'
-            )
-            ->get();
+        return app(ReporteCombustibleService::class)
+            ->resumenVehiculos($this->filters());
     }
 
     /*
@@ -129,46 +65,23 @@ class ReporteCombustible extends Page
 
     public function totalImporte()
     {
-        return $this->queryBase()->sum('importe');
+        return $this->cargas()->sum(fn ($carga) => (float) $carga->importe);
     }
 
     public function totalLitros()
     {
-        return $this->queryBase()->sum('litros');
+        return $this->cargas()->sum(fn ($carga) => (float) ($carga->litros_consumo_reporte ?? 0));
     }
 
-   
+    public function totalLitrosCargados()
+    {
+        return $this->cargas()->sum(fn ($carga) => (float) $carga->litros);
+    }
+
     public function totalKm()
-{
-    $query = CargaCombustible::query()
-        ->leftJoin('rendimientos','rendimientos.carga_id','=','carga_combustibles.id');
-
-    if ($this->vehiculo_id) {
-
-        $query->where('carga_combustibles.vehiculo_id',$this->vehiculo_id);
-
+    {
+        return $this->cargas()->sum(fn ($carga) => (float) ($carga->km_recorridos_reporte ?? 0));
     }
-
-    if ($this->cuenta_analitica_id) {
-
-        $query->where('carga_combustibles.cuenta_analitica_id',$this->cuenta_analitica_id);
-
-    }
-
-    if ($this->fecha_inicio) {
-
-        $query->whereDate('carga_combustibles.fecha_carga','>=',$this->fecha_inicio);
-
-    }
-
-    if ($this->fecha_fin) {
-
-        $query->whereDate('carga_combustibles.fecha_carga','<=',$this->fecha_fin);
-
-    }
-
-    return $query->sum('rendimientos.km_recorridos');
-}
 
     public function rendimientoGlobal()
     {
@@ -193,7 +106,10 @@ class ReporteCombustible extends Page
         return Excel::download(
             new ReporteCombustibleExport([
                 'vehiculo'=>$this->vehiculo_id,
+                'departamento'=>$this->departamento_id,
+                'localidad'=>$this->localidad_id,
                 'cuenta'=>$this->cuenta_analitica_id,
+                'tipo_combustible'=>$this->tipo_combustible,
                 'inicio'=>$this->fecha_inicio,
                 'fin'=>$this->fecha_fin
             ]),
@@ -204,5 +120,18 @@ class ReporteCombustible extends Page
     public static function canAccess(): bool
     {
         return auth()->user()->hasRole('admin');
+    }
+
+    private function filters(): array
+    {
+        return [
+            'vehiculo' => $this->vehiculo_id,
+            'departamento' => $this->departamento_id,
+            'localidad' => $this->localidad_id,
+            'cuenta' => $this->cuenta_analitica_id,
+            'tipo_combustible' => $this->tipo_combustible,
+            'inicio' => $this->fecha_inicio,
+            'fin' => $this->fecha_fin,
+        ];
     }
 }

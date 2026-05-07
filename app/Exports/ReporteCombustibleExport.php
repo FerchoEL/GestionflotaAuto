@@ -2,8 +2,7 @@
 
 namespace App\Exports;
 
-use App\Models\CargaCombustible;
-use Illuminate\Support\Facades\Auth;
+use App\Services\ReporteCombustibleService;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 
@@ -18,32 +17,25 @@ class ReporteCombustibleExport implements FromCollection, WithHeadings
 
     public function collection()
     {
-        $query = CargaCombustible::query()
-            ->with(['vehiculo','cuentaAnalitica','rendimiento']);
-
-        if($this->filters['vehiculo'])
-            $query->where('vehiculo_id',$this->filters['vehiculo']);
-
-        if($this->filters['cuenta'])
-            $query->where('cuenta_analitica_id',$this->filters['cuenta']);
-
-        if($this->filters['inicio'])
-            $query->whereDate('fecha_carga','>=',$this->filters['inicio']);
-
-        if($this->filters['fin'])
-            $query->whereDate('fecha_carga','<=',$this->filters['fin']);
-
-        return $query->get()->map(function($c){
+        return app(ReporteCombustibleService::class)
+            ->cargasConRendimientoReal($this->filters)
+            ->map(function ($c) {
 
             return [
 
                 $c->fecha_carga,
                 $c->vehiculo?->placas,
                 $c->vehiculo?->numero_economico,
+                $c->vehiculo?->departamentoActivo?->departamento?->nombre,
+                $c->vehiculo?->localidadActiva?->localidad?->nombre,
+                $c->vehiculo?->tarjetaActiva?->tarjeta?->numero,
                 $c->km_odometro,
-                $c->rendimiento?->km_recorridos,
+                $c->odometro_anterior_reporte,
+                $c->km_recorridos_reporte,
                 $c->litros,
-                $c->rendimiento?->rendimiento_km_l,
+                $c->litros_consumo_reporte,
+                $c->rendimiento_real_reporte,
+                $c->vehiculo?->rendimiento_optimo_km_l,
                 $c->precio_litro,
                 $c->importe,
                 $c->cuentaAnalitica?->nombre
@@ -61,10 +53,16 @@ class ReporteCombustibleExport implements FromCollection, WithHeadings
             'Fecha',
             'Vehiculo',
             'Numero Economico',
-            'KM',
+            'Departamento',
+            'Localidad',
+            'Tarjeta',
+            'Odometro',
+            'Odometro Anterior',
             'KM Recorridos',
-            'Litros',
-            'Rendimiento',
+            'Litros Cargados/Comprados',
+            'Litros Consumo Evaluado',
+            'Rendimiento Real',
+            'Rendimiento Optimo',
             'Precio/L',
             'Importe',
             'Cuenta Analitica'

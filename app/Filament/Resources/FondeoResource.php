@@ -10,7 +10,8 @@ use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Model; 
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 
 class FondeoResource extends Resource
 {
@@ -29,6 +30,7 @@ class FondeoResource extends Resource
                     name: 'vehiculo',
                     titleAttribute: 'numero_economico',
                     modifyQueryUsing: fn ($query) => $query
+                        ->whereHas('tarjetas', fn (Builder $query) => $query->where('activo', true))
                         ->orderBy('numero_economico')
                         ->orderBy('placas')
                 )
