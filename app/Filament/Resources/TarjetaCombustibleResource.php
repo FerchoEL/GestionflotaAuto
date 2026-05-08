@@ -3,15 +3,12 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\TarjetaCombustibleResource\Pages;
-use App\Filament\Resources\TarjetaCombustibleResource\RelationManagers;
 use App\Models\TarjetaCombustible;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class TarjetaCombustibleResource extends Resource
 {
@@ -27,9 +24,30 @@ class TarjetaCombustibleResource extends Resource
             ->schema([
                 Forms\Components\TextInput::make('numero')
                     ->required()
+                    ->dehydrateStateUsing(fn (?string $state): string => TarjetaCombustible::normalizarNumero($state))
                     ->unique(ignoreRecord: true),
 
                 Forms\Components\TextInput::make('descripcion'),
+
+                Forms\Components\TextInput::make('empleado_one_card')
+                    ->label('Empleado One Card')
+                    ->maxLength(50),
+
+                Forms\Components\TextInput::make('convenio_id_one_card')
+                    ->label('Convenio ID One Card')
+                    ->maxLength(50),
+
+                Forms\Components\TextInput::make('convenio_one_card')
+                    ->label('Convenio One Card')
+                    ->maxLength(255),
+
+                Forms\Components\TextInput::make('sucursal_one_card')
+                    ->label('Sucursal One Card')
+                    ->maxLength(255),
+
+                Forms\Components\TextInput::make('nombre_one_card')
+                    ->label('Nombre One Card')
+                    ->maxLength(255),
 
                 Forms\Components\Toggle::make('activo')
                     ->default(true),
@@ -50,9 +68,29 @@ class TarjetaCombustibleResource extends Resource
                     ->searchable()
                     ->sortable(),
 
-        Tables\Columns\TextColumn::make('descripcion'),
+                Tables\Columns\TextColumn::make('descripcion'),
 
-        Tables\Columns\BooleanColumn::make('activo'),
+                Tables\Columns\TextColumn::make('nombre_one_card')
+                    ->label('Nombre One Card')
+                    ->searchable()
+                    ->toggleable(isToggledHiddenByDefault: true),
+
+                Tables\Columns\TextColumn::make('empleado_one_card')
+                    ->label('Empleado')
+                    ->searchable()
+                    ->toggleable(isToggledHiddenByDefault: true),
+
+                Tables\Columns\TextColumn::make('convenio_id_one_card')
+                    ->label('Convenio ID')
+                    ->searchable()
+                    ->toggleable(isToggledHiddenByDefault: true),
+
+                Tables\Columns\TextColumn::make('sucursal_one_card')
+                    ->label('Sucursal')
+                    ->searchable()
+                    ->toggleable(isToggledHiddenByDefault: true),
+
+                Tables\Columns\BooleanColumn::make('activo'),
             ])
             ->filters([
                 //
