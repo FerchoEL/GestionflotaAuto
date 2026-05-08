@@ -18,6 +18,7 @@ use App\Filament\Resources\FondeoResource;
 use App\Filament\Resources\LocalidadResource;
 use App\Filament\Resources\RoleResource;
 use App\Filament\Resources\SolicitudCargaCombustibleResource;
+use App\Filament\Resources\TarjetaSaldoMovimientoResource;
 use App\Filament\Resources\TarjetaCombustibleResource;
 use App\Filament\Resources\TipoDocumentoResource;
 use App\Filament\Resources\TipoVehiculoResource;
@@ -81,6 +82,7 @@ class Sidebar extends Component
                         $this->pageItem('Mis Vehículos', 'heroicon-o-clipboard-document-list', MisVehiculos::class, Vehiculo::class),
                         $this->pageItem('Fondeo Operativo', 'heroicon-o-banknotes', FondeoDashboard::class, Fondeo::class),
                         $this->pageItem('Fondeo Financiero', 'heroicon-o-credit-card', FondeoFinancieroDashboard::class, TarjetaCombustible::class),
+                        $this->resourceItem('Saldo Movimientos', 'heroicon-o-arrows-right-left', TarjetaSaldoMovimientoResource::class, \App\Models\TarjetaSaldoMovimiento::class),
                         $this->pageItem('Carga extemporánea', 'heroicon-o-clock', RegistrarCargaExtemporanea::class, CargaCombustible::class),
                         $this->resourceItem('Carga de combustible', 'heroicon-o-beaker', CargaCombustibleResource::class, CargaCombustible::class),
                         $this->resourceItem('Tarjetas de combustible', 'heroicon-o-credit-card', TarjetaCombustibleResource::class, TarjetaCombustible::class),
