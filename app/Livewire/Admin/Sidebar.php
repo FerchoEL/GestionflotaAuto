@@ -7,6 +7,7 @@ use App\Filament\Pages\FondeoFinancieroDashboard;
 use App\Filament\Pages\MisVehiculos;
 use App\Filament\Pages\RegistrarCargaExtemporanea;
 use App\Filament\Pages\ReporteCombustible;
+use App\Filament\Pages\ReporteDocumentos;
 use App\Filament\Resources\AlertaDocumentoResource;
 use App\Filament\Resources\AlertaRendimientoResource;
 use App\Filament\Resources\AseguradoraResource;
@@ -131,6 +132,14 @@ class Sidebar extends Component
                             'Documentos por vehículo',
                             'heroicon-o-folder-open',
                             VehiculoDocumentoResource::class,
+                            VehiculoDocumento::class,
+                        ),
+                    ]),
+                    $this->buildSection('Reportes', 'heroicon-o-chart-bar', [
+                        $this->pageItem(
+                            'Reporte Documentos',
+                            'heroicon-o-document-text',
+                            ReporteDocumentos::class,
                             VehiculoDocumento::class,
                         ),
                     ]),
