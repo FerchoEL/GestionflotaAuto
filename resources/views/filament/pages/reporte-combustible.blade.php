@@ -152,11 +152,15 @@ Exportar Excel
 
 <tr class="border-b bg-gray-50 text-xs font-semibold uppercase text-gray-600 dark:bg-gray-800 dark:text-gray-300">
 
-<th class="whitespace-nowrap px-3 py-3 text-left">Fecha</th>
-<th class="whitespace-nowrap px-3 py-3 text-left">Vehículo</th>
-<th class="whitespace-nowrap px-3 py-3 text-center">No Económico</th>
-<th class="whitespace-nowrap px-3 py-3 text-left">Departamento</th>
+<th class="whitespace-nowrap px-3 py-3 text-center">No. Económico</th>
+<th class="whitespace-nowrap px-3 py-3 text-left">Placa</th>
+<th class="whitespace-nowrap px-3 py-3 text-left">Marca</th>
+<th class="whitespace-nowrap px-3 py-3 text-left">Modelo</th>
 <th class="whitespace-nowrap px-3 py-3 text-left">Localidad</th>
+<th class="whitespace-nowrap px-3 py-3 text-left">Departamento</th>
+<th class="whitespace-nowrap px-3 py-3 text-left">Usuarios asignados</th>
+<th class="whitespace-nowrap px-3 py-3 text-left">Usuario responsable</th>
+<th class="whitespace-nowrap px-3 py-3 text-left">Fecha</th>
 <th class="whitespace-nowrap px-3 py-3 text-center">Tarjeta</th>
 <th class="whitespace-nowrap px-3 py-3 text-right">Odómetro</th>
 <th class="whitespace-nowrap px-3 py-3 text-right">Odómetro anterior</th>
@@ -186,28 +190,21 @@ Exportar Excel
 
 <tr class="border-b align-middle hover:bg-gray-50 dark:hover:bg-gray-800/60">
 
-<td class="whitespace-nowrap px-3 py-3 text-left text-gray-500">-</td>
-
-<td class="whitespace-nowrap px-3 py-3 text-left font-medium">{{ $v->placas }}</td>
-
 <td class="whitespace-nowrap px-3 py-3 text-center">{{ $v->numero_economico }}</td>
-
-<td class="whitespace-nowrap px-3 py-3 text-left">{{ $v->departamento ?? '-' }}</td>
-
+<td class="whitespace-nowrap px-3 py-3 text-left font-medium">{{ $v->placas }}</td>
+<td class="whitespace-nowrap px-3 py-3 text-left">{{ $v->marca ?? '-' }}</td>
+<td class="whitespace-nowrap px-3 py-3 text-left">{{ $v->modelo ?? '-' }}</td>
 <td class="whitespace-nowrap px-3 py-3 text-left">{{ $v->localidad ?? '-' }}</td>
-
+<td class="whitespace-nowrap px-3 py-3 text-left">{{ $v->departamento ?? '-' }}</td>
+<td class="px-3 py-3 text-left">{{ $v->usuarios_asignados ?? '-' }}</td>
+<td class="px-3 py-3 text-left">{{ $v->usuario_responsable ?? '-' }}</td>
+<td class="whitespace-nowrap px-3 py-3 text-left text-gray-500">-</td>
 <td class="whitespace-nowrap px-3 py-3 text-center text-gray-500">-</td>
-
 <td class="whitespace-nowrap px-3 py-3 text-right text-gray-500">-</td>
-
 <td class="whitespace-nowrap px-3 py-3 text-right text-gray-500">-</td>
-
 <td class="whitespace-nowrap px-3 py-3 text-right">{{ number_format($v->km_recorridos,0) }}</td>
-
 <td class="whitespace-nowrap px-3 py-3 text-right">{{ number_format($v->litros_cargados,2) }}</td>
-
 <td class="whitespace-nowrap px-3 py-3 text-right">{{ number_format($v->litros,2) }}</td>
-
 <td class="whitespace-nowrap px-3 py-3 text-right">
 
 @if($v->litros > 0)
@@ -241,20 +238,17 @@ Exportar Excel
 
 <tr class="border-b align-middle hover:bg-gray-50 dark:hover:bg-gray-800/60">
 
-<td class="whitespace-nowrap px-3 py-3 text-left">{{ $c->fecha_carga }}</td>
-
-<td class="whitespace-nowrap px-3 py-3 text-left font-medium">{{ $c->vehiculo?->placas }}</td>
-
 <td class="whitespace-nowrap px-3 py-3 text-center">{{ $c->vehiculo?->numero_economico }}</td>
-
-<td class="whitespace-nowrap px-3 py-3 text-left">{{ $c->vehiculo?->departamentoActivo?->departamento?->nombre ?? '-' }}</td>
-
+<td class="whitespace-nowrap px-3 py-3 text-left font-medium">{{ $c->vehiculo?->placas }}</td>
+<td class="whitespace-nowrap px-3 py-3 text-left">{{ $c->vehiculo?->marca ?? '-' }}</td>
+<td class="whitespace-nowrap px-3 py-3 text-left">{{ $c->vehiculo?->modelo ?? '-' }}</td>
 <td class="whitespace-nowrap px-3 py-3 text-left">{{ $c->vehiculo?->localidadActiva?->localidad?->nombre ?? '-' }}</td>
-
+<td class="whitespace-nowrap px-3 py-3 text-left">{{ $c->vehiculo?->departamentoActivo?->departamento?->nombre ?? '-' }}</td>
+<td class="px-3 py-3 text-left">{{ $c->vehiculo?->usuarios_asignados_texto ?? '-' }}</td>
+<td class="px-3 py-3 text-left">{{ $c->vehiculo?->usuario_responsable_texto ?? '-' }}</td>
+<td class="whitespace-nowrap px-3 py-3 text-left">{{ $c->fecha_carga }}</td>
 <td class="whitespace-nowrap px-3 py-3 text-center">{{ $c->vehiculo?->tarjetaActiva?->tarjeta?->numero ?? '-' }}</td>
-
 <td class="whitespace-nowrap px-3 py-3 text-right">{{ $c->km_odometro }}</td>
-
 <td class="whitespace-nowrap px-3 py-3 text-right">
 {{ $c->odometro_anterior_reporte !== null ? number_format($c->odometro_anterior_reporte, 0) : '-' }}
 </td>
@@ -298,7 +292,7 @@ Exportar Excel
 
 <tr class="border-t bg-gray-50 font-bold dark:bg-gray-800">
 
-<td colspan="8" class="whitespace-nowrap px-3 py-3 text-left">
+<td colspan="12" class="whitespace-nowrap px-3 py-3 text-left">
 
 TOTALES
 

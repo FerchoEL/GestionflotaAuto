@@ -27,6 +27,9 @@ class ReporteCombustibleService
 
         return CargaCombustible::query()
             ->with([
+                'vehiculo.marcaVehiculo',
+                'vehiculo.choferes.chofer',
+                'vehiculo.responsableActivo.responsable',
                 'vehiculo.localidadActiva.localidad',
                 'vehiculo.tarjetaActiva.tarjeta',
                 'vehiculo.departamentoActivo.departamento',
@@ -79,8 +82,12 @@ class ReporteCombustibleService
                     'vehiculo_id' => $vehiculo?->id,
                     'placas' => $vehiculo?->placas,
                     'numero_economico' => $vehiculo?->numero_economico,
+                    'marca' => $vehiculo?->marca,
+                    'modelo' => $vehiculo?->modelo,
                     'departamento' => $vehiculo?->departamentoActivo?->departamento?->nombre,
                     'localidad' => $vehiculo?->localidadActiva?->localidad?->nombre,
+                    'usuarios_asignados' => $vehiculo?->usuarios_asignados_texto,
+                    'usuario_responsable' => $vehiculo?->usuario_responsable_texto,
                     'rendimiento_optimo_km_l' => $vehiculo?->rendimiento_optimo_km_l,
                     'km_recorridos' => $km,
                     'litros' => $litrosConsumo,

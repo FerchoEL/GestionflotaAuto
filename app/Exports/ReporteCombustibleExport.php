@@ -23,11 +23,15 @@ class ReporteCombustibleExport implements FromCollection, WithHeadings
 
             return [
 
-                $c->fecha_carga,
-                $c->vehiculo?->placas,
                 $c->vehiculo?->numero_economico,
-                $c->vehiculo?->departamentoActivo?->departamento?->nombre,
+                $c->vehiculo?->placas,
+                $c->vehiculo?->marca,
+                $c->vehiculo?->modelo,
                 $c->vehiculo?->localidadActiva?->localidad?->nombre,
+                $c->vehiculo?->departamentoActivo?->departamento?->nombre,
+                $c->vehiculo?->usuarios_asignados_texto,
+                $c->vehiculo?->usuario_responsable_texto,
+                $c->fecha_carga,
                 $c->vehiculo?->tarjetaActiva?->tarjeta?->numero,
                 $c->km_odometro,
                 $c->odometro_anterior_reporte,
@@ -50,11 +54,15 @@ class ReporteCombustibleExport implements FromCollection, WithHeadings
     {
         return [
 
-            'Fecha',
-            'Vehiculo',
             'Numero Economico',
-            'Departamento',
+            'Placa',
+            'Marca',
+            'Modelo',
             'Localidad',
+            'Departamento',
+            'Usuarios asignados',
+            'Usuario responsable',
+            'Fecha',
             'Tarjeta',
             'Odometro',
             'Odometro Anterior',

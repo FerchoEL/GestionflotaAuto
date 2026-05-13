@@ -105,12 +105,16 @@ Exportar Excel
 <table class="w-full min-w-max border-separate border-spacing-0 text-sm">
 <thead>
 <tr class="border-b bg-gray-50 text-xs font-semibold uppercase text-gray-600 dark:bg-gray-800 dark:text-gray-300">
-<th class="whitespace-nowrap px-3 py-3 text-left">Vehículo</th>
-<th class="whitespace-nowrap px-3 py-3 text-center">No Económico</th>
-<th class="whitespace-nowrap px-3 py-3 text-left">Departamento</th>
+<th class="whitespace-nowrap px-3 py-3 text-center">No. Económico</th>
+<th class="whitespace-nowrap px-3 py-3 text-left">Placa</th>
+<th class="whitespace-nowrap px-3 py-3 text-left">Marca</th>
+<th class="whitespace-nowrap px-3 py-3 text-left">Modelo</th>
 <th class="whitespace-nowrap px-3 py-3 text-left">Localidad</th>
+<th class="whitespace-nowrap px-3 py-3 text-left">Departamento</th>
+<th class="whitespace-nowrap px-3 py-3 text-left">Usuarios asignados</th>
+<th class="whitespace-nowrap px-3 py-3 text-left">Usuario responsable</th>
 <th class="whitespace-nowrap px-3 py-3 text-left">Tipo documento</th>
-<th class="whitespace-nowrap px-3 py-3 text-left">Nombre</th>
+<th class="whitespace-nowrap px-3 py-3 text-left">Nombre documento</th>
 <th class="whitespace-nowrap px-3 py-3 text-center">Emisión</th>
 <th class="whitespace-nowrap px-3 py-3 text-center">Vencimiento</th>
 <th class="whitespace-nowrap px-3 py-3 text-center">Estado</th>
@@ -124,10 +128,14 @@ Exportar Excel
 <tbody>
 @forelse($this->documentos() as $documento)
 <tr class="border-b align-middle hover:bg-gray-50 dark:hover:bg-gray-800/60">
-<td class="whitespace-nowrap px-3 py-3 text-left font-medium">{{ $documento->vehiculo?->placas ?? '-' }}</td>
 <td class="whitespace-nowrap px-3 py-3 text-center">{{ $documento->vehiculo?->numero_economico ?? '-' }}</td>
-<td class="whitespace-nowrap px-3 py-3 text-left">{{ $documento->vehiculo?->departamentoActivo?->departamento?->nombre ?? '-' }}</td>
+<td class="whitespace-nowrap px-3 py-3 text-left font-medium">{{ $documento->vehiculo?->placas ?? '-' }}</td>
+<td class="whitespace-nowrap px-3 py-3 text-left">{{ $documento->vehiculo?->marca ?? '-' }}</td>
+<td class="whitespace-nowrap px-3 py-3 text-left">{{ $documento->vehiculo?->modelo ?? '-' }}</td>
 <td class="whitespace-nowrap px-3 py-3 text-left">{{ $documento->vehiculo?->localidadActiva?->localidad?->nombre ?? '-' }}</td>
+<td class="whitespace-nowrap px-3 py-3 text-left">{{ $documento->vehiculo?->departamentoActivo?->departamento?->nombre ?? '-' }}</td>
+<td class="px-3 py-3 text-left">{{ $documento->vehiculo?->usuarios_asignados_texto ?? '-' }}</td>
+<td class="px-3 py-3 text-left">{{ $documento->vehiculo?->usuario_responsable_texto ?? '-' }}</td>
 <td class="whitespace-nowrap px-3 py-3 text-left">{{ $documento->tipoDocumento?->nombre ?? '-' }}</td>
 <td class="whitespace-nowrap px-3 py-3 text-left">{{ $documento->nombre }}</td>
 <td class="whitespace-nowrap px-3 py-3 text-center">{{ $documento->fecha_emision?->format('d/m/Y') ?? '-' }}</td>
@@ -171,7 +179,7 @@ Ver archivo
 </tr>
 @empty
 <tr>
-<td colspan="14" class="px-3 py-6 text-center text-sm text-gray-500">
+<td colspan="18" class="px-3 py-6 text-center text-sm text-gray-500">
 No se encontraron documentos con los filtros seleccionados.
 </td>
 </tr>

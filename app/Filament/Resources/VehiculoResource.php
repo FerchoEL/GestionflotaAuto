@@ -185,7 +185,16 @@ class VehiculoResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        $query = parent::getEloquentQuery();
+        $query = parent::getEloquentQuery()
+            ->with([
+                'marcaVehiculo',
+                'tipoVehiculo',
+                'estatus',
+                'localidadActiva.localidad',
+                'departamentoActivo.departamento',
+                'choferes.chofer',
+                'responsableActivo.responsable',
+            ]);
         $user = auth()->user();
 
         if ($user->hasRole('admin') || $user->hasRole('activos')) {
@@ -222,13 +231,35 @@ class VehiculoResource extends Resource
                     ->searchable()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('placas')
+                    ->label('Placa')
                     ->searchable()
                     ->sortable(),
-                Tables\Columns\TextColumn::make('marcaVehiculo.nombre')->label('Marca'),
-                Tables\Columns\TextColumn::make('modelo'),
-                Tables\Columns\TextColumn::make('tipoVehiculo.nombre')->label('Tipo'),
-                Tables\Columns\TextColumn::make('estatus.nombre')->label('Estatus'),
-                
+                Tables\Columns\TextColumn::make('marca')
+                    ->label('Marca')
+                    ->searchable()
+                    ->sortable(),
+                Tables\Columns\TextColumn::make('modelo')
+                    ->label('Modelo')
+                    ->searchable()
+                    ->sortable(),
+                Tables\Columns\TextColumn::make('localidadActiva.localidad.nombre')
+                    ->label('Localidad')
+                    ->toggleable(),
+                Tables\Columns\TextColumn::make('departamentoActivo.departamento.nombre')
+                    ->label('Departamento')
+                    ->toggleable(),
+                Tables\Columns\TextColumn::make('usuarios_asignados_texto')
+                    ->label('Usuarios asignados')
+                    ->wrap(),
+                Tables\Columns\TextColumn::make('usuario_responsable_texto')
+                    ->label('Usuario responsable')
+                    ->wrap(),
+                Tables\Columns\TextColumn::make('tipoVehiculo.nombre')
+                    ->label('Tipo de vehículo')
+                    ->sortable(),
+                Tables\Columns\TextColumn::make('estatus.nombre')
+                    ->label('Estatus')
+                    ->sortable(),
             ])
             ->filters([
                 //

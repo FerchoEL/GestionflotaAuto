@@ -63,6 +63,32 @@ class Vehiculo extends Model
     {
         return $this->marcaVehiculo?->nombre ?? $value;
     }
+
+    public function getUsuariosAsignadosTextoAttribute(): string
+    {
+        $usuarios = $this->choferes
+            ->filter(function ($chofer) {
+                if (! $chofer->activo) {
+                    return false;
+                }
+
+                return $chofer->fecha_fin === null || $chofer->fecha_fin->greaterThanOrEqualTo(now()->startOfDay());
+            })
+            ->sortByDesc('fecha_inicio')
+            ->map(fn ($chofer) => trim((string) $chofer->chofer?->name))
+            ->filter()
+            ->unique()
+            ->values();
+
+        return $usuarios->isNotEmpty()
+            ? $usuarios->join(', ')
+            : '-';
+    }
+
+    public function getUsuarioResponsableTextoAttribute(): string
+    {
+        return trim((string) $this->responsableActivo?->responsable?->name) ?: '-';
+    }
     
     public function tipoVehiculo()
     {
@@ -176,6 +202,17 @@ class Vehiculo extends Model
     {
         return $this->hasOne(\App\Models\VehiculoChofer::class, 'vehiculo_id', 'id')
             ->where('activo', true)
+            ->orderByDesc('fecha_inicio');
+    }
+
+    public function choferesActivos()
+    {
+        return $this->hasMany(\App\Models\VehiculoChofer::class, 'vehiculo_id', 'id')
+            ->where('activo', true)
+            ->where(function ($query) {
+                $query->whereNull('fecha_fin')
+                    ->orWhere('fecha_fin', '>=', now()->toDateString());
+            })
             ->orderByDesc('fecha_inicio');
     }
     public function cuentasAnaliticas()

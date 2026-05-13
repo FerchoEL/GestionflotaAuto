@@ -47,6 +47,9 @@ class ReporteDocumentosService
     {
         $query = VehiculoDocumento::query()
             ->with([
+                'vehiculo.marcaVehiculo',
+                'vehiculo.choferes.chofer',
+                'vehiculo.responsableActivo.responsable',
                 'vehiculo.departamentoActivo.departamento',
                 'vehiculo.localidadActiva.localidad',
                 'tipoDocumento',

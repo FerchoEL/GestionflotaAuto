@@ -18,10 +18,14 @@ class ReporteDocumentosExport implements FromCollection, WithHeadings
             ->documentos($this->filters)
             ->map(function ($documento) {
                 return [
-                    $documento->vehiculo?->placas,
                     $documento->vehiculo?->numero_economico,
-                    $documento->vehiculo?->departamentoActivo?->departamento?->nombre,
+                    $documento->vehiculo?->placas,
+                    $documento->vehiculo?->marca,
+                    $documento->vehiculo?->modelo,
                     $documento->vehiculo?->localidadActiva?->localidad?->nombre,
+                    $documento->vehiculo?->departamentoActivo?->departamento?->nombre,
+                    $documento->vehiculo?->usuarios_asignados_texto,
+                    $documento->vehiculo?->usuario_responsable_texto,
                     $documento->tipoDocumento?->nombre,
                     $documento->nombre,
                     $documento->fecha_emision?->format('Y-m-d'),
@@ -39,12 +43,16 @@ class ReporteDocumentosExport implements FromCollection, WithHeadings
     public function headings(): array
     {
         return [
-            'Vehiculo',
             'Numero Economico',
-            'Departamento',
+            'Placa',
+            'Marca',
+            'Modelo',
             'Localidad',
+            'Departamento',
+            'Usuarios asignados',
+            'Usuario responsable',
             'Tipo de documento',
-            'Nombre',
+            'Nombre documento',
             'Fecha de emision',
             'Fecha de vencimiento',
             'Estado de vigencia',
