@@ -3,15 +3,35 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
 
 class Vehiculo extends Model
 {
+    protected static function booted(): void
+    {
+        static::saving(function (self $vehiculo): void {
+            if (! $vehiculo->isDirty('marca_vehiculo_id')) {
+                return;
+            }
+
+            if (! $vehiculo->marca_vehiculo_id) {
+                $vehiculo->marca = null;
+
+                return;
+            }
+
+            $vehiculo->marca = DB::table('marca_vehiculos')
+                ->where('id', $vehiculo->marca_vehiculo_id)
+                ->value('nombre');
+        });
+    }
 
     protected $fillable = [
         'tipo_vehiculo_id',
         'departamento_id',
         'localidad_id',
         'estatus_id',
+        'marca_vehiculo_id',
         'tipo_combustible',
         'transmision',
         'numero_economico',
@@ -38,10 +58,20 @@ class Vehiculo extends Model
 
         return $numeroEconomico !== '' ? $numeroEconomico : $placas;
     }
+
+    public function getMarcaAttribute($value): ?string
+    {
+        return $this->marcaVehiculo?->nombre ?? $value;
+    }
     
     public function tipoVehiculo()
     {
         return $this->belongsTo(TipoVehiculo::class, 'tipo_vehiculo_id', 'id');
+    }
+
+    public function marcaVehiculo()
+    {
+        return $this->belongsTo(MarcaVehiculo::class, 'marca_vehiculo_id', 'id');
     }
 
     /* public function departamento()

@@ -47,6 +47,7 @@ class AdminPanelProvider extends PanelProvider
                 'Flota',
                 'Operación',
                 'Control y Análisis',
+                'Catálogos',
                 'Configuración Operativa',
                 'Configuración',
             ])

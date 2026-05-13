@@ -120,7 +120,18 @@ class VehiculoResource extends Resource
                         'unique' => 'Este VIN ya está registrado.',
                     ]),
 
-                Forms\Components\TextInput::make('marca')->required(),
+                Forms\Components\Select::make('marca_vehiculo_id')
+                    ->label('Marca')
+                    ->relationship(
+                        name: 'marcaVehiculo',
+                        titleAttribute: 'nombre',
+                        modifyQueryUsing: fn (Builder $query) => $query
+                            ->where('activo', true)
+                            ->orderBy('nombre')
+                    )
+                    ->searchable()
+                    ->preload()
+                    ->required(),
                 Forms\Components\TextInput::make('modelo')->required(),
                 Forms\Components\TextInput::make('anio')->numeric(),
                 Forms\Components\TextInput::make('color'),
@@ -213,7 +224,7 @@ class VehiculoResource extends Resource
                 Tables\Columns\TextColumn::make('placas')
                     ->searchable()
                     ->sortable(),
-                Tables\Columns\TextColumn::make('marca'),
+                Tables\Columns\TextColumn::make('marcaVehiculo.nombre')->label('Marca'),
                 Tables\Columns\TextColumn::make('modelo'),
                 Tables\Columns\TextColumn::make('tipoVehiculo.nombre')->label('Tipo'),
                 Tables\Columns\TextColumn::make('estatus.nombre')->label('Estatus'),

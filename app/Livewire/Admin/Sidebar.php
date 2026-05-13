@@ -17,6 +17,7 @@ use App\Filament\Resources\CuentaConcentradoraResource;
 use App\Filament\Resources\DepartamentoResource;
 use App\Filament\Resources\FondeoResource;
 use App\Filament\Resources\LocalidadResource;
+use App\Filament\Resources\MarcaVehiculoResource;
 use App\Filament\Resources\RoleResource;
 use App\Filament\Resources\SolicitudCargaCombustibleResource;
 use App\Filament\Resources\TarjetaSaldoMovimientoResource;
@@ -42,6 +43,7 @@ use App\Models\CuentaAnalitica;
 use App\Models\Departamento;
 use App\Models\Fondeo;
 use App\Models\Localidad;
+use App\Models\MarcaVehiculo;
 use App\Models\TarjetaCombustible;
 use App\Models\TipoDocumento;
 use App\Models\TipoVehiculo;
@@ -170,6 +172,7 @@ class Sidebar extends Component
                         $this->resourceItem('Cuentas Concentradoras', 'heroicon-o-building-library', CuentaConcentradoraResource::class, \App\Models\CuentaConcentradora::class),
                         $this->resourceItem('Departamentos', 'heroicon-o-building-office-2', DepartamentoResource::class, Departamento::class),
                         $this->resourceItem('Localidades', 'heroicon-o-map-pin', LocalidadResource::class, Localidad::class),
+                        $this->resourceItem('Marcas de vehículo', 'heroicon-o-building-office', MarcaVehiculoResource::class, MarcaVehiculo::class),
                         $this->resourceItem('Tipos de vehículo', 'heroicon-o-tag', TipoVehiculoResource::class, TipoVehiculo::class),
                         $this->resourceItem('Estatus de vehículos', 'heroicon-o-archive-box', VehiculoEstatusResource::class, VehiculoEstatus::class),
                         $this->resourceItem('Roles', 'heroicon-o-shield-check', RoleResource::class, Role::class),
