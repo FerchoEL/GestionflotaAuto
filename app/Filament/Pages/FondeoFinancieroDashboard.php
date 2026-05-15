@@ -17,6 +17,7 @@ use Filament\Tables;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 
 class FondeoFinancieroDashboard extends Page implements HasTable
@@ -39,12 +40,209 @@ class FondeoFinancieroDashboard extends Page implements HasTable
     {
         return $table
             ->query(
-                TarjetaCombustible::query()->with([
-                    'vehiculoActivo.vehiculo.tarjetaActiva.tarjeta',
-                    'vehiculoActivo.vehiculo.fondeoConfigActual',
-                ])
+                TarjetaCombustible::query()
+                    ->with([
+                        'vehiculoActivo.vehiculo.tarjetaActiva.tarjeta',
+                        'vehiculoActivo.vehiculo.fondeoConfigActual',
+                        'vehiculoActivo.vehiculo.departamentoActivo.departamento',
+                        'vehiculoActivo.vehiculo.localidadActiva.localidad',
+                    ])
+                    ->leftJoin('vehiculo_tarjetas as vt', function ($join): void {
+                        $join->on('vt.tarjeta_combustible_id', '=', 'tarjeta_combustibles.id')
+                            ->where('vt.activo', true);
+                    })
+                    ->leftJoin('vehiculos as v', 'v.id', '=', 'vt.vehiculo_id')
+                    ->leftJoin('vehiculo_fondeo_configs as vfc', function ($join): void {
+                        $join->on('vfc.vehiculo_id', '=', 'v.id')
+                            ->where('vfc.activo', true);
+                    })
+                    ->leftJoinSub(
+                        DB::table('fondeos')
+                            ->selectRaw('vehiculo_id, SUM(litros_fondeados) as litros_fondeados')
+                            ->groupBy('vehiculo_id'),
+                        'fondeos_totales',
+                        fn ($join) => $join->on('fondeos_totales.vehiculo_id', '=', 'v.id')
+                    )
+                    ->leftJoinSub(
+                        DB::table('carga_combustibles')
+                            ->selectRaw('vehiculo_id, SUM(litros) as litros_consumidos')
+                            ->groupBy('vehiculo_id'),
+                        'cargas_totales',
+                        fn ($join) => $join->on('cargas_totales.vehiculo_id', '=', 'v.id')
+                    )
+                    ->leftJoinSub(
+                        DB::table('tarjeta_saldo_movimientos')
+                            ->selectRaw('tarjeta_combustible_id, SUM(monto) as movimientos_one_card')
+                            ->groupBy('tarjeta_combustible_id'),
+                        'movimientos_totales',
+                        fn ($join) => $join->on('movimientos_totales.tarjeta_combustible_id', '=', 'tarjeta_combustibles.id')
+                    )
+                    ->select('tarjeta_combustibles.*')
+                    ->selectRaw("
+                        CASE WHEN vt.vehiculo_id IS NULL THEN 0 ELSE 1 END as tiene_vehiculo_asignado,
+                        COALESCE(NULLIF(TRIM(v.numero_economico), ''), NULLIF(TRIM(v.placas), ''), 'Sin vehiculo') as vehiculo,
+                        COALESCE(vfc.litros_asignados, 0) as asignado_litros,
+                        COALESCE((
+                            SELECT cc.precio_litro
+                            FROM carga_combustibles cc
+                            WHERE cc.vehiculo_id = v.id
+                              AND cc.precio_litro IS NOT NULL
+                              AND cc.precio_litro > 0
+                            ORDER BY cc.fecha_carga DESC, cc.id DESC
+                            LIMIT 1
+                        ), (
+                            SELECT ROUND(f.importe_fondeado / f.litros_fondeados, 2)
+                            FROM fondeos f
+                            WHERE f.vehiculo_id = v.id
+                              AND f.litros_fondeados > 0
+                              AND f.importe_fondeado > 0
+                            ORDER BY f.fecha_fondeado DESC, f.id DESC
+                            LIMIT 1
+                        ), 0) as precio_litro,
+                        ROUND(
+                            COALESCE(vfc.litros_asignados, 0) * COALESCE((
+                                SELECT cc.precio_litro
+                                FROM carga_combustibles cc
+                                WHERE cc.vehiculo_id = v.id
+                                  AND cc.precio_litro IS NOT NULL
+                                  AND cc.precio_litro > 0
+                                ORDER BY cc.fecha_carga DESC, cc.id DESC
+                                LIMIT 1
+                            ), (
+                                SELECT ROUND(f.importe_fondeado / f.litros_fondeados, 2)
+                                FROM fondeos f
+                                WHERE f.vehiculo_id = v.id
+                                  AND f.litros_fondeados > 0
+                                  AND f.importe_fondeado > 0
+                                ORDER BY f.fecha_fondeado DESC, f.id DESC
+                                LIMIT 1
+                            ), 0),
+                            2
+                        ) as objetivo_pesos,
+                        ROUND(COALESCE(movimientos_totales.movimientos_one_card, 0), 2) as ajustes_one_card,
+                        ROUND(
+                            (
+                                (
+                                    COALESCE(fondeos_totales.litros_fondeados, 0)
+                                    - COALESCE(cargas_totales.litros_consumidos, 0)
+                                ) * COALESCE((
+                                    SELECT cc.precio_litro
+                                    FROM carga_combustibles cc
+                                    WHERE cc.vehiculo_id = v.id
+                                      AND cc.precio_litro IS NOT NULL
+                                      AND cc.precio_litro > 0
+                                    ORDER BY cc.fecha_carga DESC, cc.id DESC
+                                    LIMIT 1
+                                ), (
+                                    SELECT ROUND(f.importe_fondeado / f.litros_fondeados, 2)
+                                    FROM fondeos f
+                                    WHERE f.vehiculo_id = v.id
+                                      AND f.litros_fondeados > 0
+                                      AND f.importe_fondeado > 0
+                                    ORDER BY f.fecha_fondeado DESC, f.id DESC
+                                    LIMIT 1
+                                ), 0)
+                            ) + COALESCE(movimientos_totales.movimientos_one_card, 0),
+                            2
+                        ) as saldo_financiero,
+                        ROUND(
+                            (
+                                COALESCE(fondeos_totales.litros_fondeados, 0)
+                                - COALESCE(cargas_totales.litros_consumidos, 0)
+                            ) + CASE
+                                WHEN COALESCE((
+                                    SELECT cc.precio_litro
+                                    FROM carga_combustibles cc
+                                    WHERE cc.vehiculo_id = v.id
+                                      AND cc.precio_litro IS NOT NULL
+                                      AND cc.precio_litro > 0
+                                    ORDER BY cc.fecha_carga DESC, cc.id DESC
+                                    LIMIT 1
+                                ), (
+                                    SELECT ROUND(f.importe_fondeado / f.litros_fondeados, 2)
+                                    FROM fondeos f
+                                    WHERE f.vehiculo_id = v.id
+                                      AND f.litros_fondeados > 0
+                                      AND f.importe_fondeado > 0
+                                    ORDER BY f.fecha_fondeado DESC, f.id DESC
+                                    LIMIT 1
+                                ), 0) > 0
+                                    THEN COALESCE(movimientos_totales.movimientos_one_card, 0) / COALESCE((
+                                        SELECT cc.precio_litro
+                                        FROM carga_combustibles cc
+                                        WHERE cc.vehiculo_id = v.id
+                                          AND cc.precio_litro IS NOT NULL
+                                          AND cc.precio_litro > 0
+                                        ORDER BY cc.fecha_carga DESC, cc.id DESC
+                                        LIMIT 1
+                                    ), (
+                                        SELECT ROUND(f.importe_fondeado / f.litros_fondeados, 2)
+                                        FROM fondeos f
+                                        WHERE f.vehiculo_id = v.id
+                                          AND f.litros_fondeados > 0
+                                          AND f.importe_fondeado > 0
+                                        ORDER BY f.fecha_fondeado DESC, f.id DESC
+                                        LIMIT 1
+                                    ), 0)
+                                ELSE 0
+                            END,
+                            2
+                        ) as saldo_operativo_litros,
+                        ROUND(
+                            GREATEST(
+                                (
+                                    COALESCE(vfc.litros_asignados, 0) * COALESCE((
+                                        SELECT cc.precio_litro
+                                        FROM carga_combustibles cc
+                                        WHERE cc.vehiculo_id = v.id
+                                          AND cc.precio_litro IS NOT NULL
+                                          AND cc.precio_litro > 0
+                                        ORDER BY cc.fecha_carga DESC, cc.id DESC
+                                        LIMIT 1
+                                    ), (
+                                        SELECT ROUND(f.importe_fondeado / f.litros_fondeados, 2)
+                                        FROM fondeos f
+                                        WHERE f.vehiculo_id = v.id
+                                          AND f.litros_fondeados > 0
+                                          AND f.importe_fondeado > 0
+                                        ORDER BY f.fecha_fondeado DESC, f.id DESC
+                                        LIMIT 1
+                                    ), 0)
+                                ) - (
+                                    (
+                                        (
+                                            COALESCE(fondeos_totales.litros_fondeados, 0)
+                                            - COALESCE(cargas_totales.litros_consumidos, 0)
+                                        ) * COALESCE((
+                                            SELECT cc.precio_litro
+                                            FROM carga_combustibles cc
+                                            WHERE cc.vehiculo_id = v.id
+                                              AND cc.precio_litro IS NOT NULL
+                                              AND cc.precio_litro > 0
+                                            ORDER BY cc.fecha_carga DESC, cc.id DESC
+                                            LIMIT 1
+                                        ), (
+                                            SELECT ROUND(f.importe_fondeado / f.litros_fondeados, 2)
+                                            FROM fondeos f
+                                            WHERE f.vehiculo_id = v.id
+                                              AND f.litros_fondeados > 0
+                                              AND f.importe_fondeado > 0
+                                            ORDER BY f.fecha_fondeado DESC, f.id DESC
+                                            LIMIT 1
+                                        ), 0)
+                                    ) + COALESCE(movimientos_totales.movimientos_one_card, 0)
+                                ),
+                                0
+                            ),
+                            2
+                        ) as pendiente_pesos
+                    ")
             )
-            ->defaultSort('numero')
+            ->defaultSort(function (Builder $query): Builder {
+                return $query
+                    ->orderByDesc('tiene_vehiculo_asignado')
+                    ->orderBy('numero');
+            })
             ->columns([
                 Tables\Columns\TextColumn::make('numero')
                     ->label('Tarjeta')
@@ -53,65 +251,85 @@ class FondeoFinancieroDashboard extends Page implements HasTable
                     ->badge()
                     ->color('success'),
 
-                Tables\Columns\TextColumn::make('vehiculo')
-                    ->label('Vehiculo')
-                    ->state(function (TarjetaCombustible $record): string {
-                        $vehiculo = $this->saldoService()->obtenerVehiculoActivoTarjeta($record);
+                Tables\Columns\TextColumn::make('vehiculoActivo.vehiculo.numero_economico')
+                    ->label('No. Económico')
+                    ->sortable(),
 
-                        return $vehiculo?->display_name ?: 'Sin vehiculo';
-                    }),
+                Tables\Columns\TextColumn::make('vehiculoActivo.vehiculo.placas')
+                    ->label('Placa')
+                    ->sortable(),
+
+                Tables\Columns\TextColumn::make('vehiculoActivo.vehiculo.marca')
+                    ->label('Marca')
+                    ->sortable(),
+
+                Tables\Columns\TextColumn::make('vehiculoActivo.vehiculo.modelo')
+                    ->label('Modelo')
+                    ->sortable(),
+
+                Tables\Columns\TextColumn::make('vehiculoActivo.vehiculo.localidadActiva.localidad.nombre')
+                    ->label('Localidad')
+                    ->sortable(),
+
+                Tables\Columns\TextColumn::make('vehiculoActivo.vehiculo.departamentoActivo.departamento.nombre')
+                    ->label('Departamento')
+                    ->sortable(),
 
                 Tables\Columns\TextColumn::make('asignado_litros')
                     ->label('Asignado (L)')
-                    ->state(function (TarjetaCombustible $record): string {
-                        $vehiculo = $this->saldoService()->obtenerVehiculoActivoTarjeta($record);
-
-                        return number_format($vehiculo ? $this->saldoService()->obtenerAsignadoLitrosVehiculo($vehiculo) : 0, 2);
-                    }),
+                    ->formatStateUsing(fn ($state): string => number_format((float) $state, 2))
+                    ->sortable(),
 
                 Tables\Columns\TextColumn::make('precio_litro')
                     ->label('Precio $/L')
-                    ->state(function (TarjetaCombustible $record): string {
-                        $vehiculo = $this->saldoService()->obtenerVehiculoActivoTarjeta($record);
-
-                        return number_format($vehiculo ? $this->saldoService()->obtenerUltimoPrecioLitroVehiculo($vehiculo) : 0, 2);
-                    }),
+                    ->formatStateUsing(fn ($state): string => number_format((float) $state, 2))
+                    ->sortable(),
 
                 Tables\Columns\TextColumn::make('objetivo_pesos')
                     ->label('Objetivo $')
-                    ->state(fn (TarjetaCombustible $record): string => number_format($this->saldoService()->obtenerFondoObjetivoPesosTarjeta($record), 2)),
-
-                Tables\Columns\TextColumn::make('saldo_base_pesos')
-                    ->label('Base Operativa $')
-                    ->state(fn (TarjetaCombustible $record): string => number_format($this->saldoService()->obtenerSaldoBasePesosTarjeta($record), 2)),
+                    ->formatStateUsing(fn ($state): string => number_format((float) $state, 2))
+                    ->sortable(),
 
                 Tables\Columns\TextColumn::make('ajustes_one_card')
                     ->label('Movimientos One Card $')
-                    ->state(fn (TarjetaCombustible $record): string => number_format($this->saldoService()->obtenerMovimientosOneCardPesosTarjeta($record), 2))
+                    ->formatStateUsing(fn ($state): string => number_format((float) $state, 2))
                     ->badge()
-                    ->color(fn (TarjetaCombustible $record): string => $this->saldoService()->obtenerMovimientosOneCardPesosTarjeta($record) >= 0 ? 'success' : 'danger'),
+                    ->color(fn (TarjetaCombustible $record): string => ((float) $record->ajustes_one_card) >= 0 ? 'success' : 'danger')
+                    ->sortable(),
 
                 Tables\Columns\TextColumn::make('saldo_financiero')
                     ->label('Saldo Financiero $')
-                    ->state(fn (TarjetaCombustible $record): string => number_format($this->saldoService()->obtenerSaldoFinancieroPesosTarjeta($record), 2))
+                    ->formatStateUsing(fn ($state): string => number_format((float) $state, 2))
                     ->badge()
                     ->color(function (TarjetaCombustible $record): string {
-                        $vehiculo = $this->saldoService()->obtenerVehiculoActivoTarjeta($record);
-
-                        return $vehiculo ? $this->saldoService()->obtenerColorSemaforoVehiculo($vehiculo) : 'gray';
-                    }),
+                        return $this->obtenerColorSemaforoTarjeta($record);
+                    })
+                    ->sortable(),
 
                 Tables\Columns\TextColumn::make('saldo_operativo_litros')
                     ->label('Saldo Operativo (L)')
-                    ->state(function (TarjetaCombustible $record): string {
-                        $vehiculo = $this->saldoService()->obtenerVehiculoActivoTarjeta($record);
-
-                        return number_format($vehiculo ? $this->saldoService()->obtenerSaldoDisponibleLitrosVehiculo($vehiculo) : 0, 2);
-                    }),
+                    ->formatStateUsing(fn ($state): string => number_format((float) $state, 2))
+                    ->sortable(),
 
                 Tables\Columns\TextColumn::make('pendiente_pesos')
                     ->label('Reposicion $')
-                    ->state(fn (TarjetaCombustible $record): string => number_format($this->saldoService()->obtenerMontoReposicionPesosTarjeta($record), 2)),
+                    ->formatStateUsing(fn ($state): string => number_format((float) $state, 2))
+                    ->sortable(),
+            ])
+            ->filters([
+                Tables\Filters\SelectFilter::make('asignacion')
+                    ->label('Asignacion')
+                    ->placeholder('Todas las tarjetas')
+                    ->options([
+                        'con_vehiculo' => 'Solo con vehiculo asignado',
+                    ])
+                    ->query(function (Builder $query, array $data): Builder {
+                        if (($data['value'] ?? null) !== 'con_vehiculo') {
+                            return $query;
+                        }
+
+                        return $query->whereNotNull('vt.vehiculo_id');
+                    }),
             ])
             ->actions([
                 Tables\Actions\Action::make('fondear')
@@ -350,6 +568,36 @@ class FondeoFinancieroDashboard extends Page implements HasTable
     protected function saldoService(): TarjetaSaldoService
     {
         return app(TarjetaSaldoService::class);
+    }
+
+    protected function obtenerColorSemaforoTarjeta(TarjetaCombustible $tarjeta): string
+    {
+        if (! $tarjeta->tiene_vehiculo_asignado) {
+            return 'gray';
+        }
+
+        $saldo = (float) $tarjeta->saldo_operativo_litros;
+        $asignado = (float) $tarjeta->asignado_litros;
+
+        if ($saldo <= 0) {
+            return 'danger';
+        }
+
+        if ($asignado <= 0) {
+            return 'gray';
+        }
+
+        $porcentaje = (int) round(($saldo / $asignado) * 100);
+
+        if ($porcentaje < 40) {
+            return 'danger';
+        }
+
+        if ($porcentaje < 70) {
+            return 'warning';
+        }
+
+        return 'success';
     }
 
     public function getCriticasCount(): int

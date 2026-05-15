@@ -29,82 +29,126 @@ class FondeoDashboard extends Page implements HasTable
     ==========================================================*/
 
     public function table(Table $table): Table
-{
-    return $table
-        ->query(
-            Vehiculo::query()->with(['tarjetaActiva.tarjeta'])
-        )
-        ->defaultSort('id', 'asc')
-        ->columns([
+    {
+        return $table
+            ->query(
+                Vehiculo::query()->with([
+                    'tarjetaActiva.tarjeta',
+                    'departamentoActivo.departamento',
+                    'localidadActiva.localidad',
+                ])
+            )
+            ->defaultSort('id', 'asc')
+            ->columns([
 
-            // ✅ NUEVA COLUMNA TARJETA
-            Tables\Columns\TextColumn::make('tarjeta')
-                ->label('Tarjeta')
-                ->state(fn ($record) =>
-                    $record->tarjetaActiva?->tarjeta?->numero ?? 'Sin tarjeta'
-                )
-                ->badge()
-                ->color(fn ($record) =>
-                    $record->tarjetaActiva?->tarjeta?->numero ? 'success' : 'gray'
-                )
-                ->sortable(),
-
-            // Vehículo
-            Tables\Columns\TextColumn::make('numero_economico')
-                ->label('No. Económico')
-                ->searchable()
-                ->sortable(),
-
-            Tables\Columns\TextColumn::make('placas')
-                ->label('Placas')
-                ->searchable()
-                ->sortable(),
-
-            Tables\Columns\TextColumn::make('asignado')
-                ->label('Asignado (L)')
-                ->state(fn ($record) => $this->obtenerAsignado($record)),
-
-            Tables\Columns\TextColumn::make('saldo_actual')
-                ->label('Saldo Operativo (L)')
-                ->state(fn ($record) => $this->calcularSaldo($record))
-                ->badge()
-                ->color(fn ($record) => $this->colorSemaforo($record))
-                ->icon(fn ($record) => $this->iconoSemaforo($record)),
-
-            Tables\Columns\TextColumn::make('impacto_one_card')
-                ->label('Impacto One Card (L)')
-                ->state(fn ($record) => number_format($this->obtenerImpactoOneCard($record), 2))
-                ->badge()
-                ->color(fn ($record) => $this->obtenerImpactoOneCard($record) >= 0 ? 'success' : 'danger'),
-
-            Tables\Columns\TextColumn::make('porcentaje')
-                ->label('% Fondo Disponible')
-                ->state(fn ($record) => $this->calcularPorcentaje($record) . '%')
-                ->badge()
-                ->color(fn ($record) => $this->colorSemaforo($record)),
-
-            Tables\Columns\TextColumn::make('pendiente')
-                ->label('Pendiente Reposición (L)')
-                ->state(fn ($record) => $this->calcularPendiente($record)),
-
-            Tables\Columns\TextColumn::make('precio')
-                ->label('Precio $/L')
-                ->state(fn ($record) =>
-                    number_format($this->obtenerUltimoPrecioLitro($record), 2)
-                ),
-
-            Tables\Columns\TextColumn::make('estimado')
-                ->label('$ Estimado Reposición')
-                ->state(fn ($record) =>
-                    number_format(
-                        $this->calcularPendiente($record)
-                        * $this->obtenerUltimoPrecioLitro($record),
-                        2
+                Tables\Columns\TextColumn::make('tarjeta')
+                    ->label('Tarjeta')
+                    ->state(fn ($record) =>
+                        $record->tarjetaActiva?->tarjeta?->numero ?? 'Sin tarjeta'
                     )
-                ),
-        ])
+                    ->badge()
+                    ->color(fn ($record) =>
+                        $record->tarjetaActiva?->tarjeta?->numero ? 'success' : 'gray'
+                    )
+                    ->sortable(),
 
-        ->actions([
+                Tables\Columns\TextColumn::make('numero_economico')
+                    ->label('No. Económico')
+                    ->searchable()
+                    ->sortable(),
+
+                Tables\Columns\TextColumn::make('placas')
+                    ->label('Placas')
+                    ->searchable()
+                    ->sortable(),
+
+                Tables\Columns\TextColumn::make('marca')
+                    ->label('Marca')
+                    ->sortable(),
+
+                Tables\Columns\TextColumn::make('modelo')
+                    ->label('Modelo')
+                    ->sortable(),
+
+                Tables\Columns\TextColumn::make('localidadActiva.localidad.nombre')
+                    ->label('Localidad')
+                    ->sortable(),
+
+                Tables\Columns\TextColumn::make('departamentoActivo.departamento.nombre')
+                    ->label('Departamento')
+                    ->sortable(),
+
+                Tables\Columns\TextColumn::make('asignado')
+                    ->label('Asignado (L)')
+                    ->state(fn ($record) => $this->obtenerAsignado($record)),
+
+                Tables\Columns\TextColumn::make('precio')
+                    ->label('Precio $/L')
+                    ->state(fn ($record) =>
+                        number_format($this->obtenerUltimoPrecioLitro($record), 2)
+                    )
+                    ->sortable(),
+
+                Tables\Columns\TextColumn::make('objetivo_pesos')
+                    ->label('Objetivo $')
+                    ->state(fn ($record) =>
+                        number_format($this->obtenerObjetivoPesos($record), 2)
+                    )
+                    ->sortable(),
+
+                Tables\Columns\TextColumn::make('movimientos_one_card')
+                    ->label('Movimientos One Card $')
+                    ->state(fn ($record) =>
+                        number_format($this->obtenerMovimientosOneCardPesos($record), 2)
+                    )
+                    ->badge()
+                    ->color(fn ($record) => $this->obtenerMovimientosOneCardPesos($record) >= 0 ? 'success' : 'danger')
+                    ->sortable(),
+
+                Tables\Columns\TextColumn::make('saldo_financiero')
+                    ->label('Saldo Financiero $')
+                    ->state(fn ($record) =>
+                        number_format($this->obtenerSaldoFinancieroPesos($record), 2)
+                    )
+                    ->badge()
+                    ->color(fn ($record) =>
+                        $this->obtenerSaldoFinancieroPesos($record) > 0 ? 'success' : 'danger'
+                    )
+                    ->sortable(),
+
+                Tables\Columns\TextColumn::make('saldo_operativo_litros')
+                    ->label('Saldo Operativo (L)')
+                    ->state(fn ($record) => $this->calcularSaldo($record))
+                    ->badge()
+                    ->color(fn ($record) => $this->colorSemaforo($record))
+                    ->icon(fn ($record) => $this->iconoSemaforo($record))
+                    ->sortable(),
+
+                Tables\Columns\TextColumn::make('reposicion_pesos')
+                    ->label('Reposicion $')
+                    ->state(fn ($record) =>
+                        number_format($this->obtenerReposicionPesos($record), 2)
+                    )
+                    ->sortable(),
+
+                Tables\Columns\TextColumn::make('impacto_one_card')
+                    ->label('Impacto One Card (L)')
+                    ->state(fn ($record) => number_format($this->obtenerImpactoOneCard($record), 2))
+                    ->badge()
+                    ->color(fn ($record) => $this->obtenerImpactoOneCard($record) >= 0 ? 'success' : 'danger'),
+
+                Tables\Columns\TextColumn::make('porcentaje')
+                    ->label('% Fondo Disponible')
+                    ->state(fn ($record) => $this->calcularPorcentaje($record) . '%')
+                    ->badge()
+                    ->color(fn ($record) => $this->colorSemaforo($record)),
+
+                Tables\Columns\TextColumn::make('pendiente')
+                    ->label('Pendiente Reposición (L)')
+                    ->state(fn ($record) => $this->calcularPendiente($record)),
+            ])
+
+            ->actions([
 
             Tables\Actions\Action::make('fondear')
                 ->label('Fondear')
@@ -220,6 +264,46 @@ class FondeoDashboard extends Page implements HasTable
     protected function obtenerUltimoPrecioLitro($record)
     {
         return $this->saldoService()->obtenerUltimoPrecioLitroVehiculo($record);
+    }
+
+    protected function obtenerObjetivoPesos($record): float
+    {
+        return round(
+            $this->obtenerAsignado($record)
+            * $this->obtenerUltimoPrecioLitro($record),
+            2
+        );
+    }
+
+    protected function obtenerMovimientosOneCardPesos($record): float
+    {
+        $tarjeta = $record->tarjetaActiva?->tarjeta;
+
+        if (! $tarjeta) {
+            return 0.0;
+        }
+
+        return $this->saldoService()->obtenerMovimientosOneCardPesosTarjeta($tarjeta);
+    }
+
+    protected function obtenerSaldoFinancieroPesos($record): float
+    {
+        $tarjeta = $record->tarjetaActiva?->tarjeta;
+
+        if (! $tarjeta) {
+            return 0.0;
+        }
+
+        return $this->saldoService()->obtenerSaldoFinancieroPesosTarjeta($tarjeta);
+    }
+
+    protected function obtenerReposicionPesos($record): float
+    {
+        return round(
+            $this->calcularPendiente($record)
+            * $this->obtenerUltimoPrecioLitro($record),
+            2
+        );
     }
 
     protected function tieneConfigActiva($record)
