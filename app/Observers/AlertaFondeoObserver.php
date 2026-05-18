@@ -18,7 +18,7 @@ class AlertaFondeoObserver
             $notification = new AlertaFondeoMailNotification($alertaFondeo);
 
             // 1) Creador del fondeo
-            $creador = $alertaFondeo->fondeo?->usuario;
+            $creador = $alertaFondeo->fondeo?->fondeadoPor;
             if ($creador && EmailGuard::canSend($creador->email)) {
                 $this->safeNotify($creador, $notification, 'creador_fondeo', $alertaFondeo->id);
             } else {

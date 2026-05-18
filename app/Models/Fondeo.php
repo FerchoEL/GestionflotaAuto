@@ -51,8 +51,9 @@ class Fondeo extends Model
     {
         return $this->belongsTo(User::class, 'fondeado_por_user_id');
     }
+
     public function usuario()
     {
-        return $this->belongsTo(User::class, 'user_id');
+        return $this->fondeadoPor();
     }
 }
