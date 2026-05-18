@@ -7,9 +7,11 @@ use App\Models\AlertaRendimiento;
 use App\Models\CargaCombustible;
 use App\Models\Rendimiento;
 use App\Services\RendimientoService;
+use App\Services\TarjetaMovimientoService;
 use Filament\Actions;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
+use Illuminate\Validation\ValidationException;
 use Throwable;
 
 class EditCargaCombustible extends EditRecord
@@ -17,6 +19,22 @@ class EditCargaCombustible extends EditRecord
     protected static string $resource = CargaCombustibleResource::class;
 
     protected ?CargaCombustible $siguienteCargaParaRecalculo = null;
+
+    protected function mutateFormDataBeforeSave(array $data): array
+    {
+        $tarjetaCombustibleId = app(TarjetaMovimientoService::class)
+            ->resolverTarjetaIdVehiculoEnFecha($data['vehiculo_id'] ?? null, $data['fecha_carga'] ?? null);
+
+        if (! $tarjetaCombustibleId) {
+            throw ValidationException::withMessages([
+                'data.vehiculo_id' => 'El vehículo seleccionado no tiene una tarjeta asignada para la fecha de la carga.',
+            ]);
+        }
+
+        $data['tarjeta_combustible_id'] = $tarjetaCombustibleId;
+
+        return $data;
+    }
 
     protected function getHeaderActions(): array
     {

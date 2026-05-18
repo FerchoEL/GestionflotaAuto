@@ -3,12 +3,73 @@
 namespace App\Services;
 
 use App\Models\CargaCombustible;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 class ReporteCombustibleService
 {
+    public function historialVehiculoConRendimientoReal(
+        int $vehiculoId,
+        int $perPage = 10,
+        string $pageName = 'page'
+    ): LengthAwarePaginator {
+        $base = CargaCombustible::query()
+            ->where('carga_combustibles.vehiculo_id', $vehiculoId)
+            ->select('carga_combustibles.*')
+            ->selectRaw('
+                LAG(carga_combustibles.fecha_carga) OVER (
+                    PARTITION BY carga_combustibles.vehiculo_id
+                    ORDER BY carga_combustibles.fecha_carga, carga_combustibles.id
+                ) as fecha_carga_anterior_reporte
+            ')
+            ->selectRaw('
+                LAG(carga_combustibles.km_odometro) OVER (
+                    PARTITION BY carga_combustibles.vehiculo_id
+                    ORDER BY carga_combustibles.fecha_carga, carga_combustibles.id
+                ) as odometro_anterior_reporte
+            ')
+            ->selectRaw('
+                LAG(carga_combustibles.litros) OVER (
+                    PARTITION BY carga_combustibles.vehiculo_id
+                    ORDER BY carga_combustibles.fecha_carga, carga_combustibles.id
+                ) as litros_consumo_reporte
+            ');
+
+        $paginator = DB::query()
+            ->fromSub($base, 'base')
+            ->orderByDesc('base.fecha_carga')
+            ->orderByDesc('base.id')
+            ->paginate($perPage, ['*'], $pageName);
+
+        $paginator->setCollection(
+            $paginator->getCollection()->map(function ($row) {
+                $odometroAnterior = $row->odometro_anterior_reporte !== null
+                    ? (float) $row->odometro_anterior_reporte
+                    : null;
+
+                $kmRecorridos = $odometroAnterior !== null && $row->km_odometro > $odometroAnterior
+                    ? (float) $row->km_odometro - $odometroAnterior
+                    : null;
+
+                $litrosConsumo = $row->litros_consumo_reporte !== null
+                    ? (float) $row->litros_consumo_reporte
+                    : null;
+
+                $row->km_recorridos_reporte = $kmRecorridos;
+                $row->litros_consumo_reporte = $litrosConsumo;
+                $row->rendimiento_real_reporte = $kmRecorridos !== null && $litrosConsumo > 0
+                    ? round($kmRecorridos / $litrosConsumo, 2)
+                    : null;
+
+                return $row;
+            })
+        );
+
+        return $paginator;
+    }
+
     public function cargasConRendimientoReal(array $filters): Collection
     {
         if (empty($filters['inicio']) || empty($filters['fin'])) {

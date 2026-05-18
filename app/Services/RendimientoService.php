@@ -68,12 +68,15 @@ class RendimientoService
         // Calcular kilómetros recorridos
         $kmRecorridos = $carga->km_odometro - $cargaAnterior->km_odometro;
 
-        if ($kmRecorridos <= 0 || $carga->litros <= 0) {
+        $litrosEvaluados = (float) $cargaAnterior->litros;
+
+        if ($kmRecorridos <= 0 || $litrosEvaluados <= 0) {
             return;
         }
 
-        // Calcular rendimiento
-        $rendimiento = round($kmRecorridos / $carga->litros, 2);
+        // El rendimiento se evalua contra los litros cargados previamente,
+        // alineado al criterio del reporte de combustible.
+        $rendimiento = round($kmRecorridos / $litrosEvaluados, 2);
 
         // Guardar rendimiento
         Rendimiento::create([

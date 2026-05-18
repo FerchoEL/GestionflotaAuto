@@ -6,6 +6,10 @@ Route::get('/', function () {
     return view('welcome');
 });
 
+Route::get('/presentacion/junta-directiva', function () {
+    return view('board-slide');
+})->name('board-slide');
+
 Route::middleware([
     'auth:sanctum',
     config('jetstream.auth_session'),

@@ -2,12 +2,14 @@
 
 namespace App\Models;
 
+use App\Services\TarjetaMovimientoService;
 use Illuminate\Database\Eloquent\Model;
 
 class Fondeo extends Model
 {
     protected $fillable = [
         'vehiculo_id',
+        'tarjeta_combustible_id',
         'litros_fondeados',
         'importe_fondeado',
         'fecha_fondeado',
@@ -19,9 +21,30 @@ class Fondeo extends Model
         'fecha_fondeado' => 'datetime',
     ];
 
+    protected static function booted(): void
+    {
+        static::saving(function (self $fondeo): void {
+            $fondeo->tarjeta_combustible_id = app(TarjetaMovimientoService::class)
+                ->resolverTarjetaIdVehiculoEnFecha($fondeo->vehiculo_id, $fondeo->fecha_fondeado);
+        });
+
+        static::saved(function (self $fondeo): void {
+            app(TarjetaMovimientoService::class)->sincronizarFondeo($fondeo);
+        });
+
+        static::deleted(function (self $fondeo): void {
+            app(TarjetaMovimientoService::class)->eliminarMovimientoDeOrigen($fondeo);
+        });
+    }
+
     public function vehiculo()
     {
         return $this->belongsTo(Vehiculo::class);
+    }
+
+    public function tarjeta()
+    {
+        return $this->belongsTo(TarjetaCombustible::class, 'tarjeta_combustible_id');
     }
 
     public function fondeadoPor()

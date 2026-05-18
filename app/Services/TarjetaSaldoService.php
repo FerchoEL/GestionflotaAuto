@@ -91,16 +91,7 @@ class TarjetaSaldoService
 
     public function obtenerSaldoBasePesosTarjeta(TarjetaCombustible $tarjeta): float
     {
-        $vehiculo = $this->obtenerVehiculoActivoTarjeta($tarjeta);
-
-        if (! $vehiculo) {
-            return 0.0;
-        }
-
-        return round(
-            $this->obtenerSaldoBaseLitrosVehiculo($vehiculo) * $this->obtenerUltimoPrecioLitroVehiculo($vehiculo),
-            2
-        );
+        return 0.0;
     }
 
     public function obtenerFondoObjetivoPesosTarjeta(TarjetaCombustible $tarjeta): float
@@ -119,11 +110,7 @@ class TarjetaSaldoService
 
     public function obtenerSaldoFinancieroPesosTarjeta(TarjetaCombustible $tarjeta): float
     {
-        return round(
-            $this->obtenerSaldoBasePesosTarjeta($tarjeta)
-            + $this->obtenerMovimientosOneCardPesosTarjeta($tarjeta),
-            2
-        );
+        return round($this->obtenerMovimientosOneCardPesosTarjeta($tarjeta), 2);
     }
 
     public function obtenerImpactoOneCardLitrosVehiculo(Vehiculo $vehiculo): float
@@ -157,10 +144,7 @@ class TarjetaSaldoService
 
     public function obtenerSaldoDisponibleLitrosVehiculo(Vehiculo $vehiculo): float
     {
-        return round(
-            $this->obtenerSaldoBaseLitrosVehiculo($vehiculo) + $this->obtenerImpactoOneCardLitrosVehiculo($vehiculo),
-            2
-        );
+        return round($this->obtenerImpactoOneCardLitrosVehiculo($vehiculo), 2);
     }
 
     public function obtenerPendienteLitrosVehiculo(Vehiculo $vehiculo): float

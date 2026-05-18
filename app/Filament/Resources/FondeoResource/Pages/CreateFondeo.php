@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\FondeoResource\Pages;
 
 use App\Filament\Resources\FondeoResource;
+use App\Services\TarjetaMovimientoService;
 use App\Models\Vehiculo;
 use Filament\Resources\Pages\CreateRecord;
 use Illuminate\Validation\ValidationException;
@@ -14,17 +15,19 @@ class CreateFondeo extends CreateRecord
 
     protected function mutateFormDataBeforeCreate(array $data): array
     {
-        $vehiculo = Vehiculo::query()
-            ->with('tarjetaActiva')
-            ->find($data['vehiculo_id'] ?? null);
+        $vehiculo = Vehiculo::query()->find($data['vehiculo_id'] ?? null);
 
-        if (! $vehiculo?->tarjetaActiva) {
+        $tarjetaCombustibleId = app(TarjetaMovimientoService::class)
+            ->resolverTarjetaIdVehiculoEnFecha($data['vehiculo_id'] ?? null, $data['fecha_fondeado'] ?? null);
+
+        if (! $vehiculo || ! $tarjetaCombustibleId) {
             throw ValidationException::withMessages([
-                'data.vehiculo_id' => 'El vehículo seleccionado no tiene una tarjeta activa asignada.',
+                'data.vehiculo_id' => 'El vehículo seleccionado no tiene una tarjeta asignada para la fecha del fondeo.',
             ]);
         }
 
         $data['fondeado_por_user_id'] = Auth::id();
+        $data['tarjeta_combustible_id'] = $tarjetaCombustibleId;
 
         return $data;
     }

@@ -6,6 +6,7 @@ use App\Models\CargaCombustible;
 use App\Models\CuentaAnalitica;
 use App\Models\Vehiculo;
 use App\Services\RendimientoService;
+use App\Services\TarjetaMovimientoService;
 use Filament\Forms;
 use Filament\Forms\Components\Checkbox;
 use Filament\Forms\Components\DateTimePicker;
@@ -267,6 +268,22 @@ class RegistrarCargaExtemporanea extends Page implements HasForms
 
             return;
         }
+
+        $tarjetaCombustibleId = app(TarjetaMovimientoService::class)
+            ->resolverTarjetaIdVehiculoEnFecha($data['vehiculo_id'] ?? null, $data['fecha_carga'] ?? null);
+
+        if (! $tarjetaCombustibleId) {
+            Notification::make()
+                ->title('No se puede registrar la carga')
+                ->body('El vehículo no tiene una tarjeta asignada para la fecha de la carga.')
+                ->danger()
+                ->persistent()
+                ->send();
+
+            return;
+        }
+
+        $data['tarjeta_combustible_id'] = $tarjetaCombustibleId;
 
         try {
             $carga = CargaCombustible::create($data);

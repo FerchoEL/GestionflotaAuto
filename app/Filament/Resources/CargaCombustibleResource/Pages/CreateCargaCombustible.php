@@ -6,10 +6,12 @@ use App\Filament\Resources\CargaCombustibleResource;
 use App\Models\Vehiculo;
 use App\Models\CargaCombustible;
 use App\Services\RendimientoService;
+use App\Services\TarjetaMovimientoService;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\CreateRecord;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\ValidationException;
 use Throwable;
 
 class CreateCargaCombustible extends CreateRecord
@@ -44,6 +46,17 @@ class CreateCargaCombustible extends CreateRecord
 
             $this->halt();
         }
+
+        $tarjetaCombustibleId = app(TarjetaMovimientoService::class)
+            ->resolverTarjetaIdVehiculoEnFecha($data['vehiculo_id'] ?? null, $data['fecha_carga'] ?? null);
+
+        if (! $tarjetaCombustibleId) {
+            throw ValidationException::withMessages([
+                'data.vehiculo_id' => 'El vehículo seleccionado no tiene una tarjeta asignada para la fecha de la carga.',
+            ]);
+        }
+
+        $data['tarjeta_combustible_id'] = $tarjetaCombustibleId;
 
         return $data;
     }

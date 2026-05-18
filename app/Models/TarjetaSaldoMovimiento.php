@@ -11,6 +11,8 @@ class TarjetaSaldoMovimiento extends Model
         'tipo',
         'monto',
         'fecha_movimiento',
+        'origen_tipo',
+        'origen_id',
         'tarjeta_destino_id',
         'cuenta_concentradora_id',
         'registrado_por_user_id',

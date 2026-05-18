@@ -19,6 +19,8 @@ use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
+use PhpOffice\PhpSpreadsheet\IOFactory;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
 class FondeoFinancieroDashboard extends Page implements HasTable
 {
@@ -56,20 +58,6 @@ class FondeoFinancieroDashboard extends Page implements HasTable
                         $join->on('vfc.vehiculo_id', '=', 'v.id')
                             ->where('vfc.activo', true);
                     })
-                    ->leftJoinSub(
-                        DB::table('fondeos')
-                            ->selectRaw('vehiculo_id, SUM(litros_fondeados) as litros_fondeados')
-                            ->groupBy('vehiculo_id'),
-                        'fondeos_totales',
-                        fn ($join) => $join->on('fondeos_totales.vehiculo_id', '=', 'v.id')
-                    )
-                    ->leftJoinSub(
-                        DB::table('carga_combustibles')
-                            ->selectRaw('vehiculo_id, SUM(litros) as litros_consumidos')
-                            ->groupBy('vehiculo_id'),
-                        'cargas_totales',
-                        fn ($join) => $join->on('cargas_totales.vehiculo_id', '=', 'v.id')
-                    )
                     ->leftJoinSub(
                         DB::table('tarjeta_saldo_movimientos')
                             ->selectRaw('tarjeta_combustible_id, SUM(monto) as movimientos_one_card')
@@ -120,36 +108,10 @@ class FondeoFinancieroDashboard extends Page implements HasTable
                             2
                         ) as objetivo_pesos,
                         ROUND(COALESCE(movimientos_totales.movimientos_one_card, 0), 2) as ajustes_one_card,
+                        ROUND(COALESCE(movimientos_totales.movimientos_one_card, 0), 2) as saldo_financiero,
                         ROUND(
-                            (
-                                (
-                                    COALESCE(fondeos_totales.litros_fondeados, 0)
-                                    - COALESCE(cargas_totales.litros_consumidos, 0)
-                                ) * COALESCE((
-                                    SELECT cc.precio_litro
-                                    FROM carga_combustibles cc
-                                    WHERE cc.vehiculo_id = v.id
-                                      AND cc.precio_litro IS NOT NULL
-                                      AND cc.precio_litro > 0
-                                    ORDER BY cc.fecha_carga DESC, cc.id DESC
-                                    LIMIT 1
-                                ), (
-                                    SELECT ROUND(f.importe_fondeado / f.litros_fondeados, 2)
-                                    FROM fondeos f
-                                    WHERE f.vehiculo_id = v.id
-                                      AND f.litros_fondeados > 0
-                                      AND f.importe_fondeado > 0
-                                    ORDER BY f.fecha_fondeado DESC, f.id DESC
-                                    LIMIT 1
-                                ), 0)
-                            ) + COALESCE(movimientos_totales.movimientos_one_card, 0),
-                            2
-                        ) as saldo_financiero,
-                        ROUND(
-                            (
-                                COALESCE(fondeos_totales.litros_fondeados, 0)
-                                - COALESCE(cargas_totales.litros_consumidos, 0)
-                            ) + CASE
+                            CASE
+                                WHEN vt.vehiculo_id IS NULL THEN 0
                                 WHEN COALESCE((
                                     SELECT cc.precio_litro
                                     FROM carga_combustibles cc
@@ -189,31 +151,11 @@ class FondeoFinancieroDashboard extends Page implements HasTable
                             2
                         ) as saldo_operativo_litros,
                         ROUND(
-                            GREATEST(
-                                (
-                                    COALESCE(vfc.litros_asignados, 0) * COALESCE((
-                                        SELECT cc.precio_litro
-                                        FROM carga_combustibles cc
-                                        WHERE cc.vehiculo_id = v.id
-                                          AND cc.precio_litro IS NOT NULL
-                                          AND cc.precio_litro > 0
-                                        ORDER BY cc.fecha_carga DESC, cc.id DESC
-                                        LIMIT 1
-                                    ), (
-                                        SELECT ROUND(f.importe_fondeado / f.litros_fondeados, 2)
-                                        FROM fondeos f
-                                        WHERE f.vehiculo_id = v.id
-                                          AND f.litros_fondeados > 0
-                                          AND f.importe_fondeado > 0
-                                        ORDER BY f.fecha_fondeado DESC, f.id DESC
-                                        LIMIT 1
-                                    ), 0)
-                                ) - (
+                            CASE
+                                WHEN vt.vehiculo_id IS NULL THEN 0
+                                ELSE GREATEST(
                                     (
-                                        (
-                                            COALESCE(fondeos_totales.litros_fondeados, 0)
-                                            - COALESCE(cargas_totales.litros_consumidos, 0)
-                                        ) * COALESCE((
+                                        COALESCE(vfc.litros_asignados, 0) * COALESCE((
                                             SELECT cc.precio_litro
                                             FROM carga_combustibles cc
                                             WHERE cc.vehiculo_id = v.id
@@ -230,10 +172,10 @@ class FondeoFinancieroDashboard extends Page implements HasTable
                                             ORDER BY f.fecha_fondeado DESC, f.id DESC
                                             LIMIT 1
                                         ), 0)
-                                    ) + COALESCE(movimientos_totales.movimientos_one_card, 0)
-                                ),
-                                0
-                            ),
+                                    ) - COALESCE(movimientos_totales.movimientos_one_card, 0),
+                                    0
+                                )
+                            END,
                             2
                         ) as pendiente_pesos
                     ")
@@ -488,7 +430,62 @@ class FondeoFinancieroDashboard extends Page implements HasTable
 
                         Notification::make()->title('Ajuste registrado correctamente')->success()->send();
                     }),
+            ])
+            ->headerActions([
+                Tables\Actions\Action::make('exportar_solicitud_recarga')
+                    ->label('Exportar Solicitud de Recarga')
+                    ->icon('heroicon-o-arrow-down-tray')
+                    ->action(fn () => $this->exportSolicitudRecarga())
+                    ->color('success'),
             ]);
+    }
+
+    public function exportSolicitudRecarga()
+    {
+        $templatePath = storage_path('app/templates/one-card-template.xlsx');
+
+        if (! file_exists($templatePath)) {
+            Notification::make()
+                ->title('Error')
+                ->body('No se encontró la plantilla de exportación.')
+                ->danger()
+                ->send();
+
+            return null;
+        }
+
+        $spreadsheet = IOFactory::load($templatePath);
+        $sheet = $spreadsheet->getSheetByName('SOLICITUD_DE_RECARGAS');
+
+        $tarjetas = TarjetaCombustible::query()
+            ->with(['vehiculoActivo.vehiculo'])
+            ->whereHas('vehiculoActivo')
+            ->get();
+
+        $row = 4;
+        foreach ($tarjetas as $tarjeta) {
+            $importe = $this->calcularImporteDeCarga($tarjeta);
+
+            $sheet->setCellValue('B' . $row, $tarjeta->empleado_one_card);
+            $sheet->setCellValue('E' . $row, $importe);
+            $row++;
+        }
+
+        $writer = new Xlsx($spreadsheet);
+        $fileName = 'solicitud_recarga.xlsx';
+        $tempFile = tempnam(sys_get_temp_dir(), 'solicitud_recarga_');
+
+        $writer->save($tempFile);
+
+        return response()->download($tempFile, $fileName)->deleteFileAfterSend(true);
+    }
+
+    protected function calcularImporteDeCarga(TarjetaCombustible $tarjeta): float
+    {
+        $saldoFinanciero = $this->saldoService()->obtenerSaldoFinancieroPesosTarjeta($tarjeta);
+        $objetivo = $this->saldoService()->obtenerFondoObjetivoPesosTarjeta($tarjeta);
+
+        return max(round($objetivo - $saldoFinanciero, 2), 0);
     }
 
     protected function buildMovimientoForm(): array

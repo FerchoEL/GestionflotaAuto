@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\TarjetaMovimientoService;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Builder;
 
@@ -11,6 +12,7 @@ class CargaCombustible extends Model
 
     protected $fillable = [
         'vehiculo_id',
+        'tarjeta_combustible_id',
         'user_id',
         'fecha_carga',
         'km_odometro',
@@ -60,6 +62,11 @@ class CargaCombustible extends Model
         return $this->belongsTo(User::class, 'user_id', 'id');
     }
 
+    public function tarjeta()
+    {
+        return $this->belongsTo(TarjetaCombustible::class, 'tarjeta_combustible_id', 'id');
+    }
+
     public function registradaPor()
     {
         return $this->belongsTo(User::class, 'registrada_por_user_id', 'id');
@@ -77,9 +84,11 @@ class CargaCombustible extends Model
     }
 
     
-    protected static function booted()
+    protected static function booted(): void
     {
-        static::saving(function ($model) {
+        static::saving(function (self $model): void {
+            $model->tarjeta_combustible_id = app(TarjetaMovimientoService::class)
+                ->resolverTarjetaIdVehiculoEnFecha($model->vehiculo_id, $model->fecha_carga);
 
             if ($model->litros > 0 && $model->precio_litro > 0) {
                 $model->importe = round(
@@ -87,6 +96,14 @@ class CargaCombustible extends Model
                     2
                 );
             }
+        });
+
+        static::saved(function (self $model): void {
+            app(TarjetaMovimientoService::class)->sincronizarCarga($model);
+        });
+
+        static::deleted(function (self $model): void {
+            app(TarjetaMovimientoService::class)->eliminarMovimientoDeOrigen($model);
         });
     }
 }

@@ -2,11 +2,12 @@
 
 namespace App\Filament\Pages;
 
-use App\Models\CargaCombustible;
 use App\Models\Vehiculo;
 use App\Models\AlertaRendimiento;
 use App\Models\VehiculoDocumento;
+use App\Services\ReporteCombustibleService;
 use Filament\Pages\Page;
+use Illuminate\Support\Carbon;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
@@ -115,23 +116,21 @@ class MisVehiculos extends Page
             ]);
         }
 
-        $historial = CargaCombustible::query()
-            ->with(['rendimiento'])
-            ->where('vehiculo_id', $this->vehiculoId)
-            ->orderByDesc('fecha_carga')
-            ->orderByDesc('id')
-            ->paginate(10, ['*'], 'historialPage');
+        $historial = app(ReporteCombustibleService::class)
+            ->historialVehiculoConRendimientoReal($this->vehiculoId, 10, 'historialPage');
 
         $historial->setCollection(
-            $historial->getCollection()->map(function (CargaCombustible $carga) {
-                $rendimiento = $carga->rendimiento;
+            $historial->getCollection()->map(function ($carga) {
+                $fechaCarga = $carga->fecha_carga
+                    ? Carbon::parse($carga->fecha_carga)->format('d/m/Y h:i A')
+                    : '—';
 
                 return (object) [
-                    'fecha' => $carga->fecha_carga?->format('d/m/Y h:i A') ?? '—',
+                    'fecha' => $fechaCarga,
                     'km_actuales' => $carga->km_odometro !== null ? number_format((float) $carga->km_odometro, 0) : '—',
-                    'km_recorridos' => $rendimiento?->km_recorridos !== null ? number_format((float) $rendimiento->km_recorridos, 0) : '—',
+                    'km_recorridos' => $carga->km_recorridos_reporte !== null ? number_format((float) $carga->km_recorridos_reporte, 0) : '—',
                     'litros' => $carga->litros !== null ? number_format((float) $carga->litros, 2) : '—',
-                    'rendimiento_km_l' => $rendimiento?->rendimiento_km_l !== null ? number_format((float) $rendimiento->rendimiento_km_l, 2) . ' km/L' : '—',
+                    'rendimiento_km_l' => $carga->rendimiento_real_reporte !== null ? number_format((float) $carga->rendimiento_real_reporte, 2) . ' km/L' : '—',
                     'precio_litro' => $carga->precio_litro !== null ? '$' . number_format((float) $carga->precio_litro, 2) : '—',
                     'importe' => $carga->importe !== null ? '$' . number_format((float) $carga->importe, 2) : '—',
                 ];
