@@ -120,9 +120,10 @@ return new class extends Migration
         if (! Schema::hasColumn($table, $column)) {
             Schema::table($table, function (Blueprint $table) use ($column, $indexName): void {
                 $generated = 'CASE WHEN activo = 1 THEN vehiculo_id ELSE NULL END';
-                $definition = DB::getDriverName() === 'sqlite'
-                    ? $table->unsignedBigInteger($column)->nullable()->virtualAs($generated)
-                    : $table->unsignedBigInteger($column)->nullable()->storedAs($generated);
+                // MySQL rejects STORED generated columns whose base FK column uses
+                // ON DELETE CASCADE. A virtual generated column still lets us keep
+                // the nullable unique guard across engines.
+                $definition = $table->unsignedBigInteger($column)->nullable()->virtualAs($generated);
 
                 $definition->unique($indexName);
             });
@@ -148,9 +149,9 @@ return new class extends Migration
         if (! Schema::hasColumn('vehiculo_tarjetas', $column)) {
             Schema::table('vehiculo_tarjetas', function (Blueprint $table) use ($column): void {
                 $generated = 'CASE WHEN activo = 1 THEN tarjeta_combustible_id ELSE NULL END';
-                $definition = DB::getDriverName() === 'sqlite'
-                    ? $table->unsignedBigInteger($column)->nullable()->virtualAs($generated)
-                    : $table->unsignedBigInteger($column)->nullable()->storedAs($generated);
+                // See note above: prefer a virtual generated column for cross-engine
+                // compatibility when the base column participates in foreign keys.
+                $definition = $table->unsignedBigInteger($column)->nullable()->virtualAs($generated);
 
                 $definition->unique('vt_activo_unico_tarjeta');
             });
