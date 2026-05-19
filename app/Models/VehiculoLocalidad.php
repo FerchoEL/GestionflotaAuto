@@ -33,12 +33,19 @@ class VehiculoLocalidad extends Model
 
     protected static function booted()
     {
-        static::creating(function ($registro) {
+        static::saving(function ($registro) {
+            if (! $registro->activo || $registro->fecha_fin !== null) {
+                $registro->activo = false;
+
+                return;
+            }
+
             static::where('vehiculo_id', $registro->vehiculo_id)
                 ->where('activo', true)
+                ->when($registro->exists, fn ($query) => $query->whereKeyNot($registro->getKey()))
                 ->update([
                     'activo' => false,
-                    'fecha_fin' => now(),
+                    'fecha_fin' => now()->toDateString(),
                 ]);
         });
     }
