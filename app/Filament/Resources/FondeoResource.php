@@ -25,18 +25,11 @@ class FondeoResource extends Resource
     {
         return $form->schema([
 
-            Forms\Components\Select::make('vehiculo_id')
-                ->relationship(
-                    name: 'vehiculo',
-                    titleAttribute: 'numero_economico',
-                    modifyQueryUsing: fn ($query) => $query
-                        ->whereHas('tarjetas', fn (Builder $query) => $query->where('activo', true))
-                        ->orderBy('numero_economico')
-                        ->orderBy('placas')
-                )
-                ->getOptionLabelFromRecordUsing(fn (Vehiculo $record): string => $record->display_name)
-                ->required()
-                ->searchable(['numero_economico', 'placas']),
+            Forms\Components\Select::make('tarjeta_combustible_id')
+                ->label('Tarjeta')
+                ->relationship('tarjeta', 'numero')
+                ->searchable()
+                ->required(),
 
             Forms\Components\TextInput::make('litros_fondeados')
                 ->numeric()
@@ -62,6 +55,11 @@ class FondeoResource extends Resource
     {
         return $table
             ->columns([
+                Tables\Columns\TextColumn::make('tarjeta.numero')
+                    ->label('Tarjeta')
+                    ->searchable()
+                    ->sortable(),
+
                 Tables\Columns\TextColumn::make('vehiculo.numero_economico')
                     ->label('No. Económico')
                     ->searchable()

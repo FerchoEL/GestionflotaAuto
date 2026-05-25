@@ -5,6 +5,7 @@ namespace App\Filament\Resources\FondeoResource\Pages;
 use App\Filament\Resources\FondeoResource;
 use App\Services\TarjetaMovimientoService;
 use App\Models\Vehiculo;
+use App\Models\TarjetaCombustible;
 use Filament\Resources\Pages\CreateRecord;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\Auth;
@@ -15,19 +16,23 @@ class CreateFondeo extends CreateRecord
 
     protected function mutateFormDataBeforeCreate(array $data): array
     {
-        $vehiculo = Vehiculo::query()->find($data['vehiculo_id'] ?? null);
+        // Ahora el formulario registra fondeos por tarjeta. Validamos la tarjeta seleccionada
+        $tarjeta = TarjetaCombustible::query()->find($data['tarjeta_combustible_id'] ?? null);
 
-        $tarjetaCombustibleId = app(TarjetaMovimientoService::class)
-            ->resolverTarjetaIdVehiculoEnFecha($data['vehiculo_id'] ?? null, $data['fecha_fondeado'] ?? null);
-
-        if (! $vehiculo || ! $tarjetaCombustibleId) {
+        if (! $tarjeta) {
             throw ValidationException::withMessages([
-                'data.vehiculo_id' => 'El vehículo seleccionado no tiene una tarjeta asignada para la fecha del fondeo.',
+                'data.tarjeta_combustible_id' => 'Selecciona una tarjeta válida.',
             ]);
         }
 
+        // Si la tarjeta tiene un vehículo activo para la fecha, lo asociamos al fondeo (opcional)
+        $vehiculo = $tarjeta->vehiculoActivo?->vehiculo ?? null;
+
+        if ($vehiculo) {
+            $data['vehiculo_id'] = $vehiculo->id;
+        }
+
         $data['fondeado_por_user_id'] = Auth::id();
-        $data['tarjeta_combustible_id'] = $tarjetaCombustibleId;
 
         return $data;
     }

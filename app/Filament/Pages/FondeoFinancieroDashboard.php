@@ -301,8 +301,10 @@ class FondeoFinancieroDashboard extends Page implements HasTable
                             return;
                         }
 
+                        // Registramos un fondeo financiero ligado a la tarjeta (caso B)
                         Fondeo::create([
                             'vehiculo_id' => $vehiculo->id,
+                            'tarjeta_combustible_id' => $record->id,
                             'litros_fondeados' => $data['litros_fondeados'],
                             'importe_fondeado' => $data['importe_fondeado'],
                             'fecha_fondeado' => now(),
@@ -310,7 +312,7 @@ class FondeoFinancieroDashboard extends Page implements HasTable
                             'comentario' => $data['comentario'] ?? null,
                         ]);
 
-                        Notification::make()->title('Fondeo registrado correctamente')->success()->send();
+                        Notification::make()->title('Fondeo registrado correctamente (por tarjeta)')->success()->send();
                     }),
 
                 Tables\Actions\Action::make('retirar')
@@ -401,7 +403,7 @@ class FondeoFinancieroDashboard extends Page implements HasTable
                     }),
 
                 Tables\Actions\Action::make('ajustar')
-                    ->label('Ajustar')
+                    ->label(fn (TarjetaCombustible $record): string => $this->esBalanceInicial($record) ? 'Registrar Saldo Inicial' : 'Ajustar')
                     ->form([
                         TextInput::make('monto')
                             ->label('Monto de ajuste')
@@ -413,7 +415,9 @@ class FondeoFinancieroDashboard extends Page implements HasTable
                             ->seconds(false)
                             ->required(),
                         TextInput::make('referencia')
-                            ->label('Referencia'),
+                            ->label('Referencia')
+                            ->default(fn (TarjetaCombustible $record): string => $this->esBalanceInicial($record) ? 'Saldo Inicial - Tarjeta ' . $record->numero : '')
+                            ->helperText(fn (TarjetaCombustible $record): ?string => $this->esBalanceInicial($record) ? 'Sugerido para primer movimiento' : null),
                         Textarea::make('comentario')
                             ->label('Comentario'),
                     ])
@@ -428,7 +432,8 @@ class FondeoFinancieroDashboard extends Page implements HasTable
                             'comentario' => $data['comentario'] ?? null,
                         ]);
 
-                        Notification::make()->title('Ajuste registrado correctamente')->success()->send();
+                        $mensaje = $this->esBalanceInicial($record) ? 'Saldo inicial registrado correctamente' : 'Ajuste registrado correctamente';
+                        Notification::make()->title($mensaje)->success()->send();
                     }),
             ])
             ->headerActions([
@@ -539,8 +544,9 @@ class FondeoFinancieroDashboard extends Page implements HasTable
             return false;
         }
 
-        return $this->saldoService()->obtenerPendienteLitrosVehiculo($vehiculo) > 0
-            && $this->saldoService()->obtenerUltimoPrecioLitroVehiculo($vehiculo) > 0;
+        // Permitir fondear aun cuando no exista un precio registrado.
+        // El importe deberá ser registrado manualmente por el usuario en el formulario.
+        return $this->saldoService()->obtenerPendienteLitrosVehiculo($vehiculo) > 0;
     }
 
     protected function puedeTransferirTarjeta(TarjetaCombustible $tarjeta): bool
@@ -656,6 +662,12 @@ class FondeoFinancieroDashboard extends Page implements HasTable
                     && $this->saldoService()->obtenerPorcentajeVehiculo($vehiculo) >= 70;
             })
             ->count();
+    }
+
+    protected function esBalanceInicial(TarjetaCombustible $tarjeta): bool
+    {
+        // Detecta si la tarjeta no tiene movimientos (saldo financiero = 0)
+        return $this->saldoService()->obtenerSaldoFinancieroPesosTarjeta($tarjeta) == 0;
     }
 
     public static function canAccess(): bool

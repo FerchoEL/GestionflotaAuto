@@ -24,8 +24,12 @@ class Fondeo extends Model
     protected static function booted(): void
     {
         static::saving(function (self $fondeo): void {
-            $fondeo->tarjeta_combustible_id = app(TarjetaMovimientoService::class)
-                ->resolverTarjetaIdVehiculoEnFecha($fondeo->vehiculo_id, $fondeo->fecha_fondeado);
+            // Si ya se proporcionó una tarjeta, respetarla; sólo resolver desde vehículo
+            // cuando no se haya asignado `tarjeta_combustible_id` explícitamente.
+            if (! $fondeo->tarjeta_combustible_id && $fondeo->vehiculo_id) {
+                $fondeo->tarjeta_combustible_id = app(TarjetaMovimientoService::class)
+                    ->resolverTarjetaIdVehiculoEnFecha($fondeo->vehiculo_id, $fondeo->fecha_fondeado);
+            }
         });
 
         static::saved(function (self $fondeo): void {
