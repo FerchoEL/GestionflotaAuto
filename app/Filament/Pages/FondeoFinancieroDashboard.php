@@ -471,6 +471,10 @@ class FondeoFinancieroDashboard extends Page implements HasTable
         foreach ($tarjetas as $tarjeta) {
             $importe = $this->calcularImporteDeCarga($tarjeta);
 
+            if ($importe <= 0) {
+                continue;
+            }
+
             $sheet->setCellValue('B' . $row, $tarjeta->empleado_one_card);
             $sheet->setCellValue('E' . $row, $importe);
             $row++;
