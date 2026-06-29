@@ -6,10 +6,36 @@ use App\Models\CargaCombustible;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
 class ReporteCombustibleService
 {
+    public function rangoPorDefecto(): array
+    {
+        $fechaInicio = CargaCombustible::query()->min('fecha_carga');
+
+        return [
+            'inicio' => $fechaInicio
+                ? Carbon::parse($fechaInicio)->toDateString()
+                : now()->startOfMonth()->toDateString(),
+            'fin' => now()->toDateString(),
+        ];
+    }
+
+    private function normalizarFiltros(array $filters): array
+    {
+        return array_merge([
+            'vehiculo' => null,
+            'departamento' => null,
+            'localidad' => null,
+            'cuenta' => null,
+            'tipo_combustible' => null,
+            'inicio' => null,
+            'fin' => null,
+        ], $filters, $this->rangoPorDefecto());
+    }
+
     public function historialVehiculoConRendimientoReal(
         int $vehiculoId,
         int $perPage = 10,
@@ -72,9 +98,7 @@ class ReporteCombustibleService
 
     public function cargasConRendimientoReal(array $filters): Collection
     {
-        if (empty($filters['inicio']) || empty($filters['fin'])) {
-            return collect();
-        }
+        $filters = $this->normalizarFiltros($filters);
 
         $rows = $this->queryRendimientoReal($filters)
             ->orderByDesc('base.fecha_carga')
@@ -161,6 +185,8 @@ class ReporteCombustibleService
 
     private function queryRendimientoReal(array $filters)
     {
+        $filters = $this->normalizarFiltros($filters);
+
         // Se calcula la ventana antes del filtro inicial para que la primera
         // carga del periodo pueda tomar la carga inmediata anterior.
         $base = CargaCombustible::query()

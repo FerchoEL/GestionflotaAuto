@@ -29,8 +29,10 @@ class ReporteCombustible extends Page
 
     public function mount()
     {
-        $this->fecha_inicio = now()->startOfMonth()->toDateString();
-        $this->fecha_fin = now()->toDateString();
+        $rango = app(ReporteCombustibleService::class)->rangoPorDefecto();
+
+        $this->fecha_inicio = $rango['inicio'];
+        $this->fecha_fin = $rango['fin'];
     }
 
     /*
