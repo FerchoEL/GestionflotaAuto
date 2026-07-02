@@ -203,8 +203,8 @@ Exportar Excel
 <td class="whitespace-nowrap px-3 py-3 text-right text-gray-500">-</td>
 <td class="whitespace-nowrap px-3 py-3 text-right text-gray-500">-</td>
 <td class="whitespace-nowrap px-3 py-3 text-right">{{ number_format($v->km_recorridos,0) }}</td>
-<td class="whitespace-nowrap px-3 py-3 text-right">{{ number_format($v->litros_cargados,2) }}</td>
-<td class="whitespace-nowrap px-3 py-3 text-right">{{ number_format($v->litros,2) }}</td>
+<td class="whitespace-nowrap px-3 py-3 text-right">{{ number_format($v->litros_cargados,3) }}</td>
+<td class="whitespace-nowrap px-3 py-3 text-right">{{ number_format($v->litros,3) }}</td>
 <td class="whitespace-nowrap px-3 py-3 text-right">
 
 @if($v->litros > 0)
@@ -257,7 +257,7 @@ Exportar Excel
 {{ $c->km_recorridos_reporte !== null ? number_format($c->km_recorridos_reporte, 0) : '-' }}
 </td>
 
-<td class="whitespace-nowrap px-3 py-3 text-right">{{ number_format($c->litros, 2) }}</td>
+<td class="whitespace-nowrap px-3 py-3 text-right">{{ number_format($c->litros, 3) }}</td>
 
 <td class="whitespace-nowrap px-3 py-3 text-right">
 {{ $c->litros_consumo_reporte !== null ? number_format($c->litros_consumo_reporte, 2) : '-' }}
@@ -306,13 +306,13 @@ TOTALES
 
 <td class="whitespace-nowrap px-3 py-3 text-right">
 
-{{ number_format($this->totalLitrosCargados(),2) }}
+{{ number_format($this->totalLitrosCargados(),3) }}
 
 </td>
 
 <td class="whitespace-nowrap px-3 py-3 text-right">
 
-{{ number_format($this->totalLitros(),2) }}
+{{ number_format($this->totalLitros(),3) }}
 
 </td>
 

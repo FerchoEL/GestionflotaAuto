@@ -90,14 +90,14 @@ class FondeoDashboard extends Page implements HasTable
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('objetivo_pesos')
-                    ->label('Objetivo $')
+                    ->label('Objetivo sugerido $')
                     ->state(fn ($record) =>
                         number_format($this->obtenerObjetivoPesos($record), 2)
                     )
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('movimientos_one_card')
-                    ->label('Movimientos One Card $')
+                    ->label('Movimientos netos One Card $')
                     ->state(fn ($record) =>
                         number_format($this->obtenerMovimientosOneCardPesos($record), 2)
                     )
@@ -106,7 +106,7 @@ class FondeoDashboard extends Page implements HasTable
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('saldo_financiero')
-                    ->label('Saldo Financiero $')
+                    ->label('Saldo real $')
                     ->state(fn ($record) =>
                         number_format($this->obtenerSaldoFinancieroPesos($record), 2)
                     )
@@ -125,7 +125,7 @@ class FondeoDashboard extends Page implements HasTable
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('reposicion_pesos')
-                    ->label('Reposicion $')
+                    ->label('Reposición sugerida $')
                     ->state(fn ($record) =>
                         number_format($this->obtenerReposicionPesos($record), 2)
                     )
@@ -156,32 +156,34 @@ class FondeoDashboard extends Page implements HasTable
                     $this->calcularPendiente($record) > 0
                     && $this->tieneConfigActiva($record)
                 )
-                ->form([
-                    TextInput::make('litros_fondeados')
-                        ->numeric()
-                        ->required()
-                        ->minValue(0.01)
-                        ->maxValue(fn ($record) =>
-                            $this->calcularPendiente($record)
-                        )
-                        ->default(fn ($record) =>
-                            $this->calcularPendiente($record)
-                        ),
-
-                    TextInput::make('importe_fondeado')
-                        ->numeric()
-                        ->required()
-                        ->default(fn ($record) =>
-                            round(
-                                $this->calcularPendiente($record)
-                                * $this->obtenerUltimoPrecioLitro($record),
-                                2
+                    ->form([
+                        TextInput::make('importe_fondeado')
+                            ->label('Monto real a fondear')
+                            ->numeric()
+                            ->required()
+                            ->minValue(0.01)
+                            ->default(fn ($record) =>
+                                round(
+                                    $this->calcularPendiente($record)
+                                    * $this->obtenerUltimoPrecioLitro($record),
+                                    2
+                                )
                             )
-                        ),
+                            ->helperText('Este es el saldo real que se reflejará en la tarjeta. Puede ser mayor que el objetivo sugerido.'),
 
-                    Textarea::make('comentario')
-                        ->label('Comentario'),
-                ])
+                        TextInput::make('litros_fondeados')
+                            ->label('Litros estimados')
+                            ->numeric()
+                            ->required()
+                            ->minValue(0.01)
+                            ->default(fn ($record) =>
+                                $this->calcularPendiente($record)
+                            )
+                            ->helperText('Valor sugerido por el sistema. Si el monto real es distinto, ajusta este valor para conservar la equivalencia.'),
+
+                        Textarea::make('comentario')
+                            ->label('Comentario'),
+                    ])
                 ->action(function ($record, $data) {
 
                     $pendiente = $this->calcularPendiente($record);

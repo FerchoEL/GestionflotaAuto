@@ -31,9 +31,9 @@ class CargaCombustible extends Model
 
     protected $casts = [
         'fecha_carga' => 'datetime',
-        'litros' => 'decimal:2',
-        'importe' => 'decimal:4',
-        'precio_litro' => 'decimal:2',
+        'litros' => 'decimal:3',
+        'importe' => 'decimal:2',
+        'precio_litro' => 'decimal:4',
         'es_extemporanea' => 'boolean',
         'fecha_registro_real' => 'datetime',
     ];
@@ -87,14 +87,29 @@ class CargaCombustible extends Model
     protected static function booted(): void
     {
         static::saving(function (self $model): void {
+            if ($model->exists) {
+                foreach ([
+                    'foto_odometro_path',
+                    'foto_ticket_path',
+                    'foto_bomba_path',
+                ] as $photoField) {
+                    if (blank($model->{$photoField})) {
+                        $model->{$photoField} = $model->getOriginal($photoField);
+                    }
+                }
+            }
+
             $model->tarjeta_combustible_id = app(TarjetaMovimientoService::class)
                 ->resolverTarjetaIdVehiculoEnFecha($model->vehiculo_id, $model->fecha_carga);
 
+            if (filled($model->importe) && (float) $model->importe > 0) {
+                $model->importe = round((float) $model->importe, 2);
+
+                return;
+            }
+
             if ($model->litros > 0 && $model->precio_litro > 0) {
-                $model->importe = round(
-                    $model->litros * $model->precio_litro,
-                    2
-                );
+                $model->importe = round((float) $model->litros * (float) $model->precio_litro, 2);
             }
         });
 

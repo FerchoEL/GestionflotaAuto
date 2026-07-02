@@ -228,19 +228,19 @@ class FondeoFinancieroDashboard extends Page implements HasTable
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('objetivo_pesos')
-                    ->label('Objetivo $')
+                    ->label('Objetivo sugerido $')
                     ->formatStateUsing(fn ($state): string => number_format((float) $state, 2))
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('ajustes_one_card')
-                    ->label('Movimientos One Card $')
+                    ->label('Movimientos netos One Card $')
                     ->formatStateUsing(fn ($state): string => number_format((float) $state, 2))
                     ->badge()
                     ->color(fn (TarjetaCombustible $record): string => ((float) $record->ajustes_one_card) >= 0 ? 'success' : 'danger')
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('saldo_financiero')
-                    ->label('Saldo Financiero $')
+                    ->label('Saldo real $')
                     ->formatStateUsing(fn ($state): string => number_format((float) $state, 2))
                     ->badge()
                     ->color(function (TarjetaCombustible $record): string {
@@ -254,7 +254,7 @@ class FondeoFinancieroDashboard extends Page implements HasTable
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('pendiente_pesos')
-                    ->label('Reposicion $')
+                    ->label('Reposición sugerida $')
                     ->formatStateUsing(fn ($state): string => number_format((float) $state, 2))
                     ->sortable(),
             ])
@@ -278,18 +278,25 @@ class FondeoFinancieroDashboard extends Page implements HasTable
                     ->label('Fondear')
                     ->visible(fn (TarjetaCombustible $record): bool => $this->puedeFondearTarjeta($record))
                     ->form([
-                        TextInput::make('litros_fondeados')
-                            ->label('Litros a fondear')
-                            ->numeric()
-                            ->required()
-                            ->minValue(0.01)
-                            ->default(fn (TarjetaCombustible $record): float => $this->obtenerPendienteLitrosTarjeta($record)),
                         TextInput::make('importe_fondeado')
-                            ->label('Importe a fondear')
+                            ->label('Monto real a fondear')
                             ->numeric()
                             ->required()
                             ->minValue(0.01)
-                            ->default(fn (TarjetaCombustible $record): float => $this->saldoService()->obtenerMontoReposicionPesosTarjeta($record)),
+                            ->default(fn (TarjetaCombustible $record): float => $this->saldoService()->obtenerMontoReposicionPesosTarjeta($record))
+                            ->helperText('Este es el saldo real que se reflejará en la tarjeta. Puede ser mayor que el objetivo sugerido.'),
+
+                        TextInput::make('litros_fondeados')
+                            ->label('Litros estimados')
+                            ->numeric()
+                            ->required()
+                            ->minValue(0.01)
+                            ->default(fn (TarjetaCombustible $record): float => $this->obtenerPendienteLitrosTarjeta($record))
+                            ->helperText('Valor sugerido por el sistema. Si el monto real es distinto, ajusta este valor para conservar la equivalencia.')
+                            ->extraInputAttributes([
+                                'step' => '0.001',
+                                'inputmode' => 'decimal',
+                            ]),
                         Textarea::make('comentario')
                             ->label('Comentario'),
                     ])

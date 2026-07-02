@@ -129,7 +129,7 @@ class MisVehiculos extends Page
                     'fecha' => $fechaCarga,
                     'km_actuales' => $carga->km_odometro !== null ? number_format((float) $carga->km_odometro, 0) : '—',
                     'km_recorridos' => $carga->km_recorridos_reporte !== null ? number_format((float) $carga->km_recorridos_reporte, 0) : '—',
-                    'litros' => $carga->litros !== null ? number_format((float) $carga->litros, 2) : '—',
+                    'litros' => $carga->litros !== null ? number_format((float) $carga->litros, 3) : '—',
                     'rendimiento_km_l' => $carga->rendimiento_real_reporte !== null ? number_format((float) $carga->rendimiento_real_reporte, 2) . ' km/L' : '—',
                     'precio_litro' => $carga->precio_litro !== null ? '$' . number_format((float) $carga->precio_litro, 2) : '—',
                     'importe' => $carga->importe !== null ? '$' . number_format((float) $carga->importe, 2) : '—',

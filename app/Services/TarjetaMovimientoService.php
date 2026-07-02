@@ -56,7 +56,7 @@ class TarjetaMovimientoService
             tarjetaCombustibleId: $carga->tarjeta_combustible_id,
             fechaMovimiento: $carga->fecha_carga,
             tipo: 'consumo_combustible',
-            monto: -abs((float) $carga->importe),
+            monto: -abs($this->obtenerMontoOficialCarga($carga)),
             registradoPorUserId: $registradoPor,
             referencia: 'Carga #' . $carga->id,
             comentario: $carga->es_extemporanea
@@ -71,6 +71,24 @@ class TarjetaMovimientoService
             ->where('origen_tipo', $origen::class)
             ->where('origen_id', $origen->getKey())
             ->delete();
+    }
+
+    protected function obtenerMontoOficialCarga(CargaCombustible $carga): float
+    {
+        $importe = (float) ($carga->importe ?? 0);
+
+        if ($importe > 0) {
+            return round($importe, 2);
+        }
+
+        $litros = (float) $carga->litros;
+        $precioLitro = (float) $carga->precio_litro;
+
+        if ($litros > 0 && $precioLitro > 0) {
+            return round($litros * $precioLitro, 2);
+        }
+
+        return 0.0;
     }
 
     public function aplicaFechaCorte(CarbonInterface|string|null $fecha): bool

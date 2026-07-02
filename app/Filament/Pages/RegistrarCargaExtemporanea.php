@@ -117,62 +117,33 @@ class RegistrarCargaExtemporanea extends Page implements HasForms
                     ->label('Kilometraje (odómetro)')
                     ->numeric()
                     ->required()
-                    ->rules([
-                        fn ($get) => function ($attribute, $value, $fail) use ($get) {
-                            $vehiculoId = $get('vehiculo_id');
-                            $fechaCarga = $get('fecha_carga');
-
-                            if (! $vehiculoId || ! $fechaCarga) {
-                                return;
-                            }
-
-                            $cargaAnterior = CargaCombustible::query()
-                                ->where('vehiculo_id', $vehiculoId)
-                                ->where(function (Builder $query) use ($fechaCarga) {
-                                    $query->where('fecha_carga', '<', $fechaCarga)
-                                        ->orWhere('fecha_carga', $fechaCarga);
-                                })
-                                ->orderedChronologicallyDesc()
-                                ->first();
-
-                            if ($cargaAnterior && (int) $value <= (int) $cargaAnterior->km_odometro) {
-                                $fail('El kilometraje debe ser mayor al de la carga anterior en la secuencia histórica.');
-                                return;
-                            }
-
-                            $cargaSiguiente = CargaCombustible::query()
-                                ->where('vehiculo_id', $vehiculoId)
-                                ->where('fecha_carga', '>', $fechaCarga)
-                                ->orderedChronologically()
-                                ->first();
-
-                            if ($cargaSiguiente && (int) $value >= (int) $cargaSiguiente->km_odometro) {
-                                $fail('El kilometraje debe ser menor al de la siguiente carga en la secuencia histórica.');
-                            }
-                        },
-                    ]),
+                    ->rule('gt:0')
+                    ->helperText('En carga extemporánea puedes registrar un kilometraje anterior al último capturado si corresponde a una fecha pasada.'),
 
                 TextInput::make('litros')
+                    ->label('Litros exactos del ticket')
                     ->numeric()
                     ->required()
-                    ->rule('gt:0'),
+                    ->extraInputAttributes([
+                        'step' => '0.001',
+                        'inputmode' => 'decimal',
+                    ])
+                    ->rule('gt:0')
+                    ->helperText('Captura los litros exactos que aparecen en el ticket. Puedes registrar hasta 3 decimales.'),
 
                 TextInput::make('precio_litro')
+                    ->label('Precio por litro del ticket')
                     ->numeric()
                     ->required()
-                    ->reactive(),
+                    ->rule('gt:0')
+                    ->helperText('Precio mostrado en el ticket. Se conserva solo como referencia/auditoría.'),
 
                 TextInput::make('importe')
+                    ->label('Importe total del ticket')
                     ->numeric()
-                    ->disabled()
-                    ->dehydrated(false)
-                    ->formatStateUsing(function ($get) {
-                        if ($get('litros') && $get('precio_litro')) {
-                            return round($get('litros') * $get('precio_litro'), 2);
-                        }
-
-                        return 0;
-                    }),
+                    ->required()
+                    ->rule('gt:0')
+                    ->helperText('Captura el total real pagado en el ticket. Este será el monto oficial para movimientos y reportes.'),
 
                 Select::make('cuenta_analitica_id')
                     ->label('Cuenta Analítica')
@@ -199,10 +170,6 @@ class RegistrarCargaExtemporanea extends Page implements HasForms
                     ->image()
                     ->required()
                     ->acceptedFileTypes(['image/*'])
-                    ->extraInputAttributes([
-                        'accept' => 'image/*',
-                        'capture' => 'environment',
-                    ])
                     ->disk('public')
                     ->directory('cargas/odometro')
                     ->maxSize(20480),
@@ -212,10 +179,6 @@ class RegistrarCargaExtemporanea extends Page implements HasForms
                     ->image()
                     ->required()
                     ->acceptedFileTypes(['image/*'])
-                    ->extraInputAttributes([
-                        'accept' => 'image/*',
-                        'capture' => 'environment',
-                    ])
                     ->disk('public')
                     ->directory('cargas/ticket')
                     ->maxSize(20480),
@@ -225,10 +188,6 @@ class RegistrarCargaExtemporanea extends Page implements HasForms
                     ->image()
                     ->required()
                     ->acceptedFileTypes(['image/*'])
-                    ->extraInputAttributes([
-                        'accept' => 'image/*',
-                        'capture' => 'environment',
-                    ])
                     ->disk('public')
                     ->directory('cargas/bomba')
                     ->maxSize(20480),

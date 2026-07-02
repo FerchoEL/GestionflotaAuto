@@ -163,25 +163,29 @@ class CargaCombustibleResource extends Resource
                 ]),
 
             Forms\Components\TextInput::make('litros')
+                ->label('Litros exactos del ticket')
                 ->numeric()
                 ->required()
-                ->rule('gt:0'),
+                ->extraInputAttributes([
+                    'step' => '0.001',
+                    'inputmode' => 'decimal',
+                ])
+                ->rule('gt:0')
+                ->helperText('Captura los litros exactos que aparecen en el ticket. Puedes registrar hasta 3 decimales.'),
 
             Forms\Components\TextInput::make('precio_litro')
+            ->label('Precio por litro del ticket')
             ->numeric()
             ->required()
-            ->reactive(),
+            ->rule('gt:0')
+            ->helperText('Precio mostrado en el ticket. Se conserva solo como referencia/auditoría.'),
 
             Forms\Components\TextInput::make('importe')
+                ->label('Importe total del ticket')
                 ->numeric()
-                ->disabled()
-                ->dehydrated(false)
-                ->formatStateUsing(function ($get) {
-                    if ($get('litros') && $get('precio_litro')) {
-                        return round($get('litros') * $get('precio_litro'), 2);
-                    }
-                    return 0;
-                }),
+                ->required()
+                ->rule('gt:0')
+                ->helperText('Captura el total real pagado en el ticket. Este será el monto oficial para movimientos y reportes.'),
 
             Forms\Components\Select::make('cuenta_analitica_id')
                 ->label('Cuenta Analítica')
@@ -195,12 +199,11 @@ class CargaCombustibleResource extends Resource
             Forms\Components\FileUpload::make('foto_odometro_path')
                 ->label('Foto odómetro')
                 ->image()
-                ->required()
+                ->required(fn (?Model $record): bool => blank($record))
+                ->helperText(fn (?Model $record): string => filled($record)
+                    ? 'Deja la foto actual si no necesitas cambiarla.'
+                    : 'Sube la foto del odómetro para guardar la carga.')
                 ->acceptedFileTypes(['image/*'])
-                ->extraInputAttributes([
-                    'accept' => 'image/*',
-                    'capture' => 'environment',
-                ])
                 ->disk('public')
                 ->directory('cargas/odometro')
                 ->maxSize(20480),
@@ -208,12 +211,11 @@ class CargaCombustibleResource extends Resource
             Forms\Components\FileUpload::make('foto_ticket_path')
                 ->label('Foto ticket')
                 ->image()
-                ->required()
+                ->required(fn (?Model $record): bool => blank($record))
+                ->helperText(fn (?Model $record): string => filled($record)
+                    ? 'Deja la foto actual si no necesitas cambiarla.'
+                    : 'Sube la foto del ticket para guardar la carga.')
                 ->acceptedFileTypes(['image/*'])
-                ->extraInputAttributes([
-                    'accept' => 'image/*',
-                    'capture' => 'environment',
-                ])
                 ->disk('public')
                 ->directory('cargas/ticket')
                 ->maxSize(20480),
@@ -221,12 +223,11 @@ class CargaCombustibleResource extends Resource
             Forms\Components\FileUpload::make('foto_bomba_path')
                 ->label('Foto bomba')
                 ->image()
-                ->required()
+                ->required(fn (?Model $record): bool => blank($record))
+                ->helperText(fn (?Model $record): string => filled($record)
+                    ? 'Deja la foto actual si no necesitas cambiarla.'
+                    : 'Sube la foto de la bomba para guardar la carga.')
                 ->acceptedFileTypes(['image/*'])
-                ->extraInputAttributes([
-                    'accept' => 'image/*',
-                    'capture' => 'environment',
-                ])
                 ->disk('public')
                 ->directory('cargas/bomba')
                 ->maxSize(20480),
