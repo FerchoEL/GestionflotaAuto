@@ -165,35 +165,43 @@ class RegistrarCargaExtemporanea extends Page implements HasForms
                     ->columnSpanFull()
                     ->helperText('Describe por qué esta carga se registra fuera del flujo normal.'),
 
-                FileUpload::make('foto_odometro_path')
-                    ->label('Foto odómetro')
-                    ->image()
-                    ->required()
-                    ->acceptedFileTypes(['image/*'])
-                    ->disk('public')
-                    ->directory('cargas/odometro')
-                    ->maxSize(20480),
+                $this->mobileImageUpload('foto_odometro_path', 'Foto odómetro', 'cargas/odometro'),
 
-                FileUpload::make('foto_ticket_path')
-                    ->label('Foto ticket')
-                    ->image()
-                    ->required()
-                    ->acceptedFileTypes(['image/*'])
-                    ->disk('public')
-                    ->directory('cargas/ticket')
-                    ->maxSize(20480),
+                $this->mobileImageUpload('foto_ticket_path', 'Foto ticket', 'cargas/ticket'),
 
-                FileUpload::make('foto_bomba_path')
-                    ->label('Foto bomba')
-                    ->image()
-                    ->required()
-                    ->acceptedFileTypes(['image/*'])
-                    ->disk('public')
-                    ->directory('cargas/bomba')
-                    ->maxSize(20480),
+                $this->mobileImageUpload('foto_bomba_path', 'Foto bomba', 'cargas/bomba'),
             ])
             ->columns(2)
             ->statePath('data');
+    }
+
+    private function mobileImageUpload(string $statePath, string $label, string $directory): FileUpload
+    {
+        return FileUpload::make($statePath)
+            ->label($label)
+            ->image()
+            ->required()
+            ->acceptedFileTypes(['image/*'])
+            ->disk('public')
+            ->directory($directory)
+            ->maxSize(20480)
+            ->extraAlpineAttributes([
+                'x-init' => <<<'JS'
+const captureFixTimer = setInterval(() => {
+    if (! pond) {
+        return;
+    }
+
+    pond.setOptions({ allowSyncAcceptAttribute: false });
+
+    if ($refs.input) {
+        $refs.input.removeAttribute('accept');
+    }
+
+    clearInterval(captureFixTimer);
+}, 50);
+JS,
+            ]);
     }
 
     public function save(): void

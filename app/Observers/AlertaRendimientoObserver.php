@@ -19,6 +19,12 @@ class AlertaRendimientoObserver
         }
 
         DB::afterCommit(function () use ($alertaRendimiento) {
+            $alertaRendimiento->loadMissing([
+                'vehiculo',
+                'carga.registradaPor',
+                'carga.usuario',
+                'responsable',
+            ]);
 
             $notification = new AlertaRendimientoMailNotification($alertaRendimiento);
             $usuariosNotificados = collect();
