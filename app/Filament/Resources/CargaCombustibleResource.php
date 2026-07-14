@@ -340,7 +340,9 @@ JS,
     {
         return auth()->user()->hasAnyRole([
             'admin',
-            'chofer'
+            'chofer',
+            'responsable',
+            'activos'
         ]);
     }
 

@@ -7,6 +7,7 @@ use App\Filament\Pages\FondeoFinancieroDashboard;
 use App\Filament\Pages\MisVehiculos;
 use App\Filament\Pages\RegistrarCargaExtemporanea;
 use App\Filament\Pages\ReporteCombustible;
+use App\Filament\Pages\ReporteCombustibleCopia;
 use App\Filament\Pages\ReporteDocumentos;
 use App\Filament\Resources\AlertaDocumentoResource;
 use App\Filament\Resources\AlertaRendimientoResource;
@@ -105,6 +106,7 @@ class Sidebar extends Component
                     ]),
                     $this->buildSection('Reportes', 'heroicon-o-chart-bar', [
                         $this->pageItem('Reporte Combustible', 'heroicon-o-presentation-chart-line', ReporteCombustible::class, CargaCombustible::class),
+                        $this->pageItem('Reporte Combustible Copia', 'heroicon-o-presentation-chart-line', ReporteCombustibleCopia::class, CargaCombustible::class),
                     ]),
                     
                 ],
