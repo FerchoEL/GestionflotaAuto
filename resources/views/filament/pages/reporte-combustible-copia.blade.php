@@ -166,7 +166,6 @@ Exportar Excel
 <th class="whitespace-nowrap px-3 py-3 text-right">Odómetro anterior</th>
 <th class="whitespace-nowrap px-3 py-3 text-right">KM recorridos</th>
 <th class="whitespace-nowrap px-3 py-3 text-right">Litros cargados/comprados</th>
-<th class="whitespace-nowrap px-3 py-3 text-right">Litros consumo evaluado</th>
 <th class="whitespace-nowrap px-3 py-3 text-right">Rendimiento Real</th>
 <th class="whitespace-nowrap px-3 py-3 text-right">Rendimiento Óptimo</th>
 <th class="whitespace-nowrap px-3 py-3 text-right">Precio/L</th>
@@ -204,11 +203,10 @@ Exportar Excel
 <td class="whitespace-nowrap px-3 py-3 text-right text-gray-500">-</td>
 <td class="whitespace-nowrap px-3 py-3 text-right">{{ number_format($v->km_recorridos,0) }}</td>
 <td class="whitespace-nowrap px-3 py-3 text-right">{{ number_format($v->litros_cargados,3) }}</td>
-<td class="whitespace-nowrap px-3 py-3 text-right">{{ number_format($v->litros,3) }}</td>
 <td class="whitespace-nowrap px-3 py-3 text-right">
 
-@if($v->litros > 0)
-{{ number_format($v->km_recorridos / $v->litros,2) }}
+@if($v->litros_cargados > 0)
+{{ number_format($v->km_recorridos / $v->litros_cargados,2) }}
 @else
 0
 @endif
@@ -260,10 +258,6 @@ Exportar Excel
 <td class="whitespace-nowrap px-3 py-3 text-right">{{ number_format($c->litros, 3) }}</td>
 
 <td class="whitespace-nowrap px-3 py-3 text-right">
-{{ $c->litros_consumo_reporte !== null ? number_format($c->litros_consumo_reporte, 2) : '-' }}
-</td>
-
-<td class="whitespace-nowrap px-3 py-3 text-right">
 {{ $c->rendimiento_real_reporte !== null ? number_format($c->rendimiento_real_reporte, 2) : '-' }}
 </td>
 
@@ -307,12 +301,6 @@ TOTALES
 <td class="whitespace-nowrap px-3 py-3 text-right">
 
 {{ number_format($this->totalLitrosCargados(),3) }}
-
-</td>
-
-<td class="whitespace-nowrap px-3 py-3 text-right">
-
-{{ number_format($this->totalLitros(),3) }}
 
 </td>
 

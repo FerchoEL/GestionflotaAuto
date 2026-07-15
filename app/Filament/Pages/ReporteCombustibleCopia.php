@@ -70,14 +70,13 @@ class ReporteCombustibleCopia extends Page
         return $this->cargas()->sum(fn ($carga) => (float) $carga->importe);
     }
 
-    public function totalLitros()
-    {
-        return $this->cargas()->sum(fn ($carga) => (float) ($carga->litros_consumo_reporte ?? 0));
-    }
-
     public function totalLitrosCargados()
     {
-        return $this->cargas()->sum(fn ($carga) => (float) $carga->litros);
+        return $this->cargas()->sum(function ($carga) {
+            return $carga->km_recorridos_reporte !== null
+                ? (float) $carga->litros
+                : 0;
+        });
     }
 
     public function totalKm()
@@ -88,7 +87,7 @@ class ReporteCombustibleCopia extends Page
     public function rendimientoGlobal()
     {
         $km = $this->totalKm();
-        $litros = $this->totalLitros();
+        $litros = $this->totalLitrosCargados();
 
         if ($litros == 0) {
             return 0;

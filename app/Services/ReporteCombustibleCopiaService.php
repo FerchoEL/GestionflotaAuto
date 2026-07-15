@@ -33,7 +33,7 @@ class ReporteCombustibleCopiaService
             'tipo_combustible' => null,
             'inicio' => null,
             'fin' => null,
-        ], $filters, $this->rangoPorDefecto());
+        ], $this->rangoPorDefecto(), $filters);
     }
 
     public function historialVehiculoConRendimientoReal(
@@ -55,14 +55,7 @@ class ReporteCombustibleCopiaService
                     PARTITION BY carga_combustibles.vehiculo_id
                     ORDER BY carga_combustibles.fecha_carga, carga_combustibles.id
                 ) as odometro_anterior_reporte
-            ')
-            ->selectRaw('
-                LAG(carga_combustibles.litros) OVER (
-                    PARTITION BY carga_combustibles.vehiculo_id
-                    ORDER BY carga_combustibles.fecha_carga, carga_combustibles.id
-                ) as litros_consumo_reporte
             ');
-
         $paginator = DB::query()
             ->fromSub($base, 'base')
             ->orderByDesc('base.fecha_carga')
@@ -79,14 +72,9 @@ class ReporteCombustibleCopiaService
                     ? (float) $row->km_odometro - $odometroAnterior
                     : null;
 
-                $litrosConsumo = $row->litros_consumo_reporte !== null
-                    ? (float) $row->litros_consumo_reporte
-                    : null;
-
                 $row->km_recorridos_reporte = $kmRecorridos;
-                $row->litros_consumo_reporte = $litrosConsumo;
-                $row->rendimiento_real_reporte = $kmRecorridos !== null && $litrosConsumo > 0
-                    ? round($kmRecorridos / $litrosConsumo, 2)
+                $row->rendimiento_real_reporte = $kmRecorridos !== null && (float) $row->litros > 0
+                    ? round($kmRecorridos / (float) $row->litros, 2)
                     : null;
 
                 return $row;
@@ -135,16 +123,11 @@ class ReporteCombustibleCopiaService
                     ? (float) $carga->km_odometro - $odometroAnterior
                     : null;
 
-                $litrosConsumo = $row->litros_consumo_reporte !== null
-                    ? (float) $row->litros_consumo_reporte
-                    : null;
-
-                $rendimiento = $kmRecorridos !== null && $litrosConsumo > 0
-                    ? round($kmRecorridos / $litrosConsumo, 2)
+                $rendimiento = $kmRecorridos !== null && (float) $carga->litros > 0
+                    ? round($kmRecorridos / (float) $carga->litros, 2)
                     : null;
 
                 $carga->setAttribute('odometro_anterior_reporte', $odometroAnterior);
-                $carga->setAttribute('litros_consumo_reporte', $litrosConsumo);
                 $carga->setAttribute('km_recorridos_reporte', $kmRecorridos);
                 $carga->setAttribute('rendimiento_real_reporte', $rendimiento);
                 $carga->setAttribute('fecha_carga_anterior_reporte', $row->fecha_carga_anterior_reporte);
@@ -161,7 +144,11 @@ class ReporteCombustibleCopiaService
                 $primeraCarga = $cargas->first();
                 $vehiculo = $primeraCarga->vehiculo;
                 $km = $cargas->sum(fn ($carga) => (float) ($carga->km_recorridos_reporte ?? 0));
-                $litrosConsumo = $cargas->sum(fn ($carga) => (float) ($carga->litros_consumo_reporte ?? 0));
+                $litrosCargados = $cargas->sum(function ($carga) {
+                    return $carga->km_recorridos_reporte !== null
+                        ? (float) $carga->litros
+                        : 0;
+                });
 
                 return (object) [
                     'vehiculo_id' => $vehiculo?->id,
@@ -175,8 +162,8 @@ class ReporteCombustibleCopiaService
                     'usuario_responsable' => $vehiculo?->usuario_responsable_texto,
                     'rendimiento_optimo_km_l' => $vehiculo?->rendimiento_optimo_km_l,
                     'km_recorridos' => $km,
-                    'litros' => $litrosConsumo,
-                    'litros_cargados' => $cargas->sum(fn ($carga) => (float) $carga->litros),
+                    'litros' => $litrosCargados,
+                    'litros_cargados' => $litrosCargados,
                     'importe' => $cargas->sum(fn ($carga) => (float) $carga->importe),
                 ];
             })
@@ -210,12 +197,6 @@ class ReporteCombustibleCopiaService
                     PARTITION BY carga_combustibles.vehiculo_id
                     ORDER BY carga_combustibles.fecha_carga, carga_combustibles.id
                 ) as odometro_anterior_reporte
-            ')
-            ->selectRaw('
-                LAG(carga_combustibles.litros) OVER (
-                    PARTITION BY carga_combustibles.vehiculo_id
-                    ORDER BY carga_combustibles.fecha_carga, carga_combustibles.id
-                ) as litros_consumo_reporte
             ');
 
         $this->aplicarFiltrosSinFechaInicio($base, $filters);
