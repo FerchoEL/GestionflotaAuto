@@ -20,8 +20,15 @@ class EditCargaCombustible extends EditRecord
 
     protected ?CargaCombustible $siguienteCargaParaRecalculo = null;
 
+    protected ?int $vehiculoOriginalId = null;
+
+    protected ?string $fechaCargaOriginal = null;
+
     protected function mutateFormDataBeforeSave(array $data): array
     {
+        $this->vehiculoOriginalId = $this->record->vehiculo_id;
+        $this->fechaCargaOriginal = $this->record->getRawOriginal('fecha_carga');
+
         $tarjetaCombustibleId = app(TarjetaMovimientoService::class)
             ->resolverTarjetaIdVehiculoEnFecha($data['vehiculo_id'] ?? null, $data['fecha_carga'] ?? null);
 
@@ -76,8 +83,20 @@ class EditCargaCombustible extends EditRecord
     protected function afterSave(): void
     {
         try {
-            app(RendimientoService::class)
-                ->recalcularDesdeCarga($this->record);
+            $servicio = app(RendimientoService::class);
+
+            $vehiculoActualizo = $this->vehiculoOriginalId !== null
+                && (int) $this->vehiculoOriginalId !== (int) $this->record->vehiculo_id;
+
+            $servicio->recalcularDesdeCarga($this->record);
+
+            if ($vehiculoActualizo) {
+                $cargaSiguienteVehiculoAnterior = $this->obtenerCargaSiguienteOriginal();
+
+                if ($cargaSiguienteVehiculoAnterior) {
+                    $servicio->recalcularDesdeCarga($cargaSiguienteVehiculoAnterior);
+                }
+            }
 
             Notification::make()
                 ->title('La carga se actualizó correctamente')
@@ -92,5 +111,24 @@ class EditCargaCombustible extends EditRecord
                 ->persistent()
                 ->send();
         }
+    }
+
+    protected function obtenerCargaSiguienteOriginal(): ?CargaCombustible
+    {
+        if ($this->vehiculoOriginalId === null || blank($this->fechaCargaOriginal)) {
+            return null;
+        }
+
+        return CargaCombustible::query()
+            ->where('vehiculo_id', $this->vehiculoOriginalId)
+            ->where(function ($query) {
+                $query->where('fecha_carga', '>', $this->fechaCargaOriginal)
+                    ->orWhere(function ($subQuery) {
+                        $subQuery->where('fecha_carga', $this->fechaCargaOriginal)
+                            ->where('id', '>', $this->record->id);
+                    });
+            })
+            ->orderedChronologically()
+            ->first();
     }
 }
