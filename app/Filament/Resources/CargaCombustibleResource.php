@@ -28,29 +28,51 @@ class CargaCombustibleResource extends Resource
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
     protected static ?string $navigationLabel = 'Carga de combustible';
 
+    public static function esChoferEstricto(): bool
+    {
+        $user = Auth::user();
+
+        return $user?->hasRole('chofer')
+            && ! $user?->hasAnyRole(['admin', 'responsable', 'activos']);
+    }
+
     public static function form(Form $form): Form
     {
-        $mobileImageUpload = static function (string $statePath, string $label, string $directory, mixed $required): Forms\Components\FileUpload {
-            return Forms\Components\FileUpload::make($statePath)
+        $esChoferEstricto = static::esChoferEstricto();
+
+        $mobileImageUpload = static function (
+            string $statePath,
+            string $label,
+            string $directory,
+            mixed $required,
+            bool $forzarCamara = false
+        ): Forms\Components\FileUpload {
+            $component = Forms\Components\FileUpload::make($statePath)
                 ->label($label)
                 ->image()
                 ->required($required)
                 ->acceptedFileTypes(['image/*'])
                 ->disk('public')
                 ->directory($directory)
-                ->maxSize(20480)
+                ->maxSize(20480);
+
+            if (! $forzarCamara) {
+                return $component;
+            }
+
+            return $component
+                ->extraInputAttributes([
+                    'capture' => 'environment',
+                ])
                 ->extraAlpineAttributes([
                     'x-init' => <<<'JS'
 const captureFixTimer = setInterval(() => {
-    if (! pond) {
+    if (! pond || !$refs.input) {
         return;
     }
 
-    pond.setOptions({ allowSyncAcceptAttribute: false });
-
-    if ($refs.input) {
-        $refs.input.removeAttribute('accept');
-    }
+    $refs.input.setAttribute('accept', 'image/*');
+    $refs.input.setAttribute('capture', 'environment');
 
     clearInterval(captureFixTimer);
 }, 50);
@@ -125,10 +147,14 @@ JS,
             Forms\Components\DateTimePicker::make('fecha_carga')
                 ->label('Fecha de carga')
                 ->default(now())
+                ->disabled($esChoferEstricto)
                 ->required()
                 ->native(false)
                 ->displayFormat('d/m/Y h:i A')
-                ->format('Y-m-d H:i:s'),
+                ->format('Y-m-d H:i:s')
+                ->helperText($esChoferEstricto
+                    ? 'La fecha se asigna automáticamente al guardar para usuarios chofer.'
+                    : 'Puedes ajustar la fecha de la carga cuando sea necesario.'),
 
             Forms\Components\TextInput::make('km_odometro')
                 ->label('Kilometraje (odómetro)')
@@ -224,17 +250,17 @@ JS,
                 ->visible(fn () => auth()->user()->hasAnyRole(['admin','responsable']))
                 ->helperText('Se sugiere automáticamente según el vehículo seleccionado.'),
 
-            $mobileImageUpload('foto_odometro_path', 'Foto odómetro', 'cargas/odometro', fn (?Model $record): bool => blank($record))
+            $mobileImageUpload('foto_odometro_path', 'Foto odómetro', 'cargas/odometro', fn (?Model $record): bool => blank($record), $esChoferEstricto)
                 ->helperText(fn (?Model $record): string => filled($record)
                     ? 'Deja la foto actual si no necesitas cambiarla.'
                     : 'Sube la foto del odómetro para guardar la carga.'),
 
-            $mobileImageUpload('foto_ticket_path', 'Foto ticket', 'cargas/ticket', fn (?Model $record): bool => blank($record))
+            $mobileImageUpload('foto_ticket_path', 'Foto ticket', 'cargas/ticket', fn (?Model $record): bool => blank($record), $esChoferEstricto)
                 ->helperText(fn (?Model $record): string => filled($record)
                     ? 'Deja la foto actual si no necesitas cambiarla.'
                     : 'Sube la foto del ticket para guardar la carga.'),
 
-            $mobileImageUpload('foto_bomba_path', 'Foto bomba', 'cargas/bomba', fn (?Model $record): bool => blank($record))
+            $mobileImageUpload('foto_bomba_path', 'Foto bomba', 'cargas/bomba', fn (?Model $record): bool => blank($record), $esChoferEstricto)
                 ->helperText(fn (?Model $record): string => filled($record)
                     ? 'Deja la foto actual si no necesitas cambiarla.'
                     : 'Sube la foto de la bomba para guardar la carga.'),

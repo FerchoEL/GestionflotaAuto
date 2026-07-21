@@ -22,6 +22,10 @@ class CreateCargaCombustible extends CreateRecord
     {
         $data['user_id'] = Auth::id();
 
+        if (CargaCombustibleResource::esChoferEstricto()) {
+            $data['fecha_carga'] = now()->format('Y-m-d H:i:s');
+        }
+
         $vehiculo = Vehiculo::find($data['vehiculo_id']);
 
         if (! $vehiculo) {

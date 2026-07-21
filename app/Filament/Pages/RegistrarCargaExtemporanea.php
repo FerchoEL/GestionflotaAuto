@@ -184,24 +184,7 @@ class RegistrarCargaExtemporanea extends Page implements HasForms
             ->acceptedFileTypes(['image/*'])
             ->disk('public')
             ->directory($directory)
-            ->maxSize(20480)
-            ->extraAlpineAttributes([
-                'x-init' => <<<'JS'
-const captureFixTimer = setInterval(() => {
-    if (! pond) {
-        return;
-    }
-
-    pond.setOptions({ allowSyncAcceptAttribute: false });
-
-    if ($refs.input) {
-        $refs.input.removeAttribute('accept');
-    }
-
-    clearInterval(captureFixTimer);
-}, 50);
-JS,
-            ]);
+            ->maxSize(20480);
     }
 
     public function save(): void
