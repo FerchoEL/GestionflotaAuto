@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Filament\Pages\ReporteCombustible;
 use App\Filament\Pages\MisVehiculos;
+use App\Filament\Pages\RegistrarCargaExtemporanea;
 use App\Models\User;
 use App\Models\Vehiculo;
 use App\Models\VehiculoChofer;
@@ -146,6 +147,54 @@ class FlotaScopeVisibilityTest extends TestCase
         ]);
 
         $this->assertSame([$vehiculoAsignado->id], $cargas->pluck('vehiculo_id')->all());
+    }
+
+    public function test_responsable_ve_su_unidad_como_chofer_en_carga_extemporanea(): void
+    {
+        $this->crearRolesBase();
+
+        $usuario = User::factory()->create([
+            'email' => 'sergio.felix@kpgroup.mx',
+            'name' => 'Sergio Felix',
+        ]);
+        $usuario->assignRole('responsable');
+
+        $vehiculo = $this->crearVehiculo('PN2369B', '122', '9BD281H68PYY57371');
+        VehiculoChofer::create([
+            'vehiculo_id' => $vehiculo->id,
+            'chofer_user_id' => $usuario->id,
+            'fecha_inicio' => now()->toDateString(),
+            'fecha_fin' => null,
+            'activo' => true,
+        ]);
+
+        app(VehiculoAsignacionActivaService::class)->guardarResponsable([
+            'vehiculo_id' => $vehiculo->id,
+            'responsable_user_id' => User::factory()->create()->id,
+            'fecha_inicio' => now()->toDateString(),
+            'activo' => true,
+        ]);
+
+        $tarjetaId = DB::table('tarjeta_combustibles')->insertGetId([
+            'numero' => 'TEST-122',
+            'activo' => true,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        DB::table('vehiculo_tarjetas')->insert([
+            'vehiculo_id' => $vehiculo->id,
+            'tarjeta_combustible_id' => $tarjetaId,
+            'fecha_inicio' => now()->toDateString(),
+            'activo' => true,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $this->actingAs($usuario);
+
+        $opciones = app(RegistrarCargaExtemporanea::class)->vehiculosDisponibles();
+
+        $this->assertArrayHasKey($vehiculo->id, $opciones);
     }
 
     private function crearRolesBase(): void

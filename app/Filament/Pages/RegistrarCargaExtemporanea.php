@@ -7,6 +7,7 @@ use App\Models\CuentaAnalitica;
 use App\Models\Vehiculo;
 use App\Services\RendimientoService;
 use App\Services\TarjetaMovimientoService;
+use App\Support\FlotaScope;
 use Filament\Forms;
 use Filament\Forms\Components\Checkbox;
 use Filament\Forms\Components\DateTimePicker;
@@ -64,31 +65,7 @@ class RegistrarCargaExtemporanea extends Page implements HasForms
             ->schema([
                 Select::make('vehiculo_id')
                     ->label('Vehículo')
-                    ->options(function () {
-                        $user = Auth::user();
-
-                        $query = Vehiculo::query()
-                            ->whereHas('responsables', fn (Builder $query) => $query->where('activo', true))
-                            ->whereHas('tarjetas', fn (Builder $query) => $query->where('activo', true));
-
-                        if ($user?->hasRole('admin')) {
-                            return $query
-                                ->orderBy('numero_economico')
-                                ->orderBy('placas')
-                                ->get()
-                                ->mapWithKeys(fn (Vehiculo $vehiculo): array => [$vehiculo->id => $vehiculo->display_name]);
-                        }
-
-                        return $query
-                            ->whereHas('responsables', function (Builder $query) use ($user) {
-                                $query->where('responsable_user_id', $user?->id)
-                                    ->where('activo', true);
-                            })
-                            ->orderBy('numero_economico')
-                            ->orderBy('placas')
-                            ->get()
-                            ->mapWithKeys(fn (Vehiculo $vehiculo): array => [$vehiculo->id => $vehiculo->display_name]);
-                    })
+                    ->options(fn (): array => $this->vehiculosDisponibles())
                     ->searchable()
                     ->live()
                     ->required()
@@ -187,6 +164,20 @@ class RegistrarCargaExtemporanea extends Page implements HasForms
             ->maxSize(20480);
     }
 
+    public function vehiculosDisponibles(): array
+    {
+        return FlotaScope::vehiculosUsuario()
+            ->whereHas('responsables', fn (Builder $query) => $query->where('activo', true))
+            ->whereHas('tarjetas', fn (Builder $query) => $query->where('activo', true))
+            ->orderBy('numero_economico')
+            ->orderBy('placas')
+            ->get()
+            ->mapWithKeys(fn (Vehiculo $vehiculo): array => [
+                $vehiculo->id => $vehiculo->display_name,
+            ])
+            ->all();
+    }
+
     public function save(): void
     {
         $data = $this->form->getState();
@@ -201,6 +192,17 @@ class RegistrarCargaExtemporanea extends Page implements HasForms
         if (! $vehiculo) {
             Notification::make()
                 ->title('Vehículo no válido')
+                ->danger()
+                ->persistent()
+                ->send();
+
+            return;
+        }
+
+        if (! FlotaScope::vehiculosUsuario()->whereKey($vehiculo->id)->exists()) {
+            Notification::make()
+                ->title('Vehículo no disponible')
+                ->body('No tienes una asignación activa para registrar cargas en este vehículo.')
                 ->danger()
                 ->persistent()
                 ->send();
