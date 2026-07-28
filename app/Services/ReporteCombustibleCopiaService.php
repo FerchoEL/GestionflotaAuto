@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use App\Support\FlotaScope;
 
 class ReporteCombustibleCopiaService
 {
@@ -214,6 +215,10 @@ class ReporteCombustibleCopiaService
     private function aplicarFiltrosSinFechaInicio(Builder $query, array $filters): void
     {
         $query->whereDate('carga_combustibles.fecha_carga', '<=', $filters['fin']);
+
+        if (auth()->check() && ! auth()->user()->hasAnyRole(['admin', 'activos', 'fondeo'])) {
+            $query->whereIn('carga_combustibles.vehiculo_id', FlotaScope::idsVehiculosUsuario());
+        }
 
         if ($filters['vehiculo']) {
             $query->where('carga_combustibles.vehiculo_id', $filters['vehiculo']);

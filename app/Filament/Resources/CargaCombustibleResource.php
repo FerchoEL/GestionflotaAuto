@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\Auth;
 use App\Models\Vehiculo;
 use App\Models\VehiculoChofer;
 use App\Models\VehiculoResponsable;
+use App\Support\FlotaScope;
 use Illuminate\Database\Eloquent\Model;
 
 
@@ -88,9 +89,6 @@ JS,
                 $user = Auth::user();
 
                 $queryBase = Vehiculo::query()
-                    ->whereHas('responsables', function ($q) {
-                        $q->where('activo', true);
-                    })
                     ->whereHas('tarjetas', function ($q) {
                         $q->where('activo', true);
                     });
@@ -103,18 +101,8 @@ JS,
                         ->mapWithKeys(fn (Vehiculo $vehiculo): array => [$vehiculo->id => $vehiculo->display_name]);
                 }
 
-                $idsChofer = VehiculoChofer::where('chofer_user_id', $user->id)
-                    ->where('activo', true)
-                    ->pluck('vehiculo_id');
-
-                $idsResp = VehiculoResponsable::where('responsable_user_id', $user->id)
-                    ->where('activo', true)
-                    ->pluck('vehiculo_id');
-
-                $ids = $idsChofer->merge($idsResp)->unique()->values();
-
                 return $queryBase
-                    ->whereIn('id', $ids)
+                    ->whereIn('id', FlotaScope::idsVehiculosUsuario())
                     ->orderBy('numero_economico')
                     ->orderBy('placas')
                     ->get()
@@ -400,21 +388,11 @@ JS,
             return $query;
         }
 
-        if ($user->hasRole('chofer')) {
-            return $query->whereHas('vehiculo.choferes', function ($q) use ($user) {
-                $q->where('chofer_user_id', $user->id)
-                ->where('activo', true);
-            });
+        if ($user->hasRole('fondeo')) {
+            return $query;
         }
 
-        if ($user->hasRole('responsable')) {
-            return $query->whereHas('vehiculo.responsables', function ($q) use ($user) {
-                $q->where('responsable_user_id', $user->id)
-                ->where('activo', true);
-            });
-        }
-
-        return $query->whereRaw('1 = 0');
+        return $query->whereIn('vehiculo_id', FlotaScope::idsVehiculosUsuario());
     }
 
     public static function getPages(): array

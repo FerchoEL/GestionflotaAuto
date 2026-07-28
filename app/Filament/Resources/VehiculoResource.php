@@ -5,6 +5,7 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\VehiculoResource\Pages;
 use App\Filament\Resources\VehiculoResource\RelationManagers;
 use App\Models\Vehiculo;
+use App\Support\FlotaScope;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -201,25 +202,11 @@ class VehiculoResource extends Resource
             return $query;
         }
 
-        if ($user->hasRole('chofer')) {
-            return $query->whereHas('choferes', function ($q) use ($user) {
-                $q->where('chofer_user_id', $user->id)
-                ->where('activo', true);
-            });
-        }
-
-        if ($user->hasRole('responsable')) {
-            return $query->whereHas('responsables', function ($q) use ($user) {
-                $q->where('responsable_user_id', $user->id)
-                ->where('activo', true);
-            });
-        }
-
         if ($user->hasRole('fondeo')) {
             return $query; // solo lectura pero puede ver todos
         }
 
-        return $query->whereRaw('1 = 0');
+        return $query->whereIn('id', FlotaScope::idsVehiculosUsuario());
     }
 
     public static function table(Table $table): Table

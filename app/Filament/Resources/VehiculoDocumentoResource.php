@@ -8,6 +8,7 @@ use App\Models\TipoDocumento;
 use App\Models\TipoPago;
 use App\Models\Vehiculo;
 use App\Models\VehiculoDocumento;
+use App\Support\FlotaScope;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Select;
@@ -134,7 +135,6 @@ class VehiculoDocumentoResource extends Resource
         return $table
             ->modifyQueryUsing(function (Builder $query): Builder {
                 $user = auth()->user();
-                $userId = $user->id;
 
                 $query->with(['vehiculo', 'tipoDocumento']);
 
@@ -142,25 +142,7 @@ class VehiculoDocumentoResource extends Resource
                     return $query;
                 }
 
-                if ($user->hasRole('chofer')) {
-                    return $query->whereHas('vehiculo.choferes', function (Builder $subQuery) use ($userId) {
-                        $subQuery
-                            ->where('chofer_user_id', $userId)
-                            ->where('activo', true)
-                            ->where(function (Builder $sub) {
-                                $sub->whereNull('fecha_fin')
-                                    ->orWhere('fecha_fin', '>=', now());
-                            });
-                    });
-                }
-
-                if ($user->hasRole('responsable')) {
-                    return $query->whereHas('vehiculo.responsableActivo', function (Builder $subQuery) use ($userId) {
-                        $subQuery->where('responsable_user_id', $userId);
-                    });
-                }
-
-                return $query->whereRaw('1 = 0');
+                return $query->whereIn('vehiculo_id', FlotaScope::idsVehiculosUsuario());
             })
             ->columns([
                 TextColumn::make('vehiculo.numero_economico')

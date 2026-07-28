@@ -6,6 +6,7 @@ use App\Models\Vehiculo;
 use App\Models\AlertaRendimiento;
 use App\Models\VehiculoDocumento;
 use App\Services\ReporteCombustibleService;
+use App\Support\FlotaScope;
 use Filament\Pages\Page;
 use Illuminate\Support\Carbon;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -51,38 +52,8 @@ class MisVehiculos extends Page
 
     public function vehiculosAsignados(): Collection
     {
-        $user = auth()->user();
-        $userId = $user->id;
-
-        if ($user->hasRole('admin')) {
-            return Vehiculo::query()
-                ->where('activo', true)
-                ->orderBy('numero_economico')
-                ->orderBy('placas')
-                ->get();
-        }
-
-        if ($user->hasRole('chofer')) {
-            return Vehiculo::query()
-                ->where('activo', true)
-                ->whereHas('choferes', function ($q) use ($userId) {
-                    $q->where('chofer_user_id', $userId)
-                        ->where('activo', true)
-                        ->where(function ($sub) {
-                            $sub->whereNull('fecha_fin')
-                                ->orWhere('fecha_fin', '>=', now());
-                        });
-                })
-                ->orderBy('numero_economico')
-                ->orderBy('placas')
-                ->get();
-        }
-
-        return Vehiculo::query()
+        return FlotaScope::vehiculosUsuario()
             ->where('activo', true)
-            ->whereHas('responsableActivo', function ($q) use ($userId) {
-                $q->where('responsable_user_id', $userId);
-            })
             ->orderBy('numero_economico')
             ->orderBy('placas')
             ->get();

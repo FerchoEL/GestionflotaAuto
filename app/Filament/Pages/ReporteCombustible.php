@@ -121,7 +121,7 @@ class ReporteCombustible extends Page
 
     public static function canAccess(): bool
     {
-        return auth()->user()->hasRole('admin');
+        return auth()->user()?->hasAnyRole(['admin', 'responsable']) ?? false;
     }
 
     private function filters(): array

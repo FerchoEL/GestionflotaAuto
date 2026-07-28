@@ -120,7 +120,7 @@ class ReporteCombustibleCopia extends Page
 
     public static function canAccess(): bool
     {
-        return auth()->user()->hasRole('admin');
+        return auth()->user()?->hasAnyRole(['admin', 'responsable']) ?? false;
     }
 
     public static function shouldRegisterNavigation(): bool

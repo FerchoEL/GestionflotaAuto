@@ -3,12 +3,14 @@
 namespace App\Support;
 
 use App\Models\Vehiculo;
+use App\Models\User;
+use Illuminate\Database\Eloquent\Builder;
 
 class FlotaScope
 {
-    public static function vehiculosUsuario()
+    public static function vehiculosUsuario(?User $user = null): Builder
     {
-        $user = auth()->user();
+        $user ??= auth()->user();
 
         if (!$user) {
             return Vehiculo::query()->whereRaw('1=0');
@@ -19,22 +21,25 @@ class FlotaScope
             return Vehiculo::query()->where('activo', true);
         }
 
-        // Chofer → solo vehículos asignados
-        if ($user->hasRole('chofer')) {
-            return Vehiculo::whereHas('choferes', function ($q) use ($user) {
-                $q->where('chofer_user_id', $user->id)
-                  ->where('activo', true);
-            });
-        }
+        $query = Vehiculo::query();
 
-        // Responsable → vehículos que supervisa
-        if ($user->hasRole('responsable')) {
-            return Vehiculo::whereHas('responsableActivo', function ($q) use ($user) {
+        $query->where(function (Builder $subQuery) use ($user): void {
+            if (! $user->hasAnyRole(['chofer', 'responsable'])) {
+                $subQuery->whereRaw('1=0');
+
+                return;
+            }
+
+            // Ambos perfiles pueden tener asignaciones como chofer y responsable.
+            $subQuery->whereHas('choferes', function (Builder $q) use ($user): void {
+                $q->where('chofer_user_id', $user->id)
+                    ->where('activo', true);
+            })->orWhereHas('responsableActivo', function (Builder $q) use ($user): void {
                 $q->where('responsable_user_id', $user->id);
             });
-        }
+        });
 
-        return Vehiculo::query()->whereRaw('1=0');
+        return $query;
     }
 
     public static function idsVehiculosUsuario()

@@ -7,6 +7,7 @@ use App\Filament\Resources\SolicitudCargaCombustibleResource\RelationManagers;
 use App\Models\SolicitudCargaCombustible;
 use App\Models\CargaCombustible;
 use App\Models\CuentaAnalitica;
+use App\Support\FlotaScope;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -56,13 +57,11 @@ class SolicitudCargaCombustibleResource extends Resource
 
         $user = auth()->user();
 
-        if ($user->hasRole('responsable')) {
-            return $query->whereHas('vehiculo.responsableActivo', function ($q) use ($user) {
-                $q->where('responsable_user_id', $user->id);
-            });
+        if ($user->hasRole('admin') || $user->hasRole('activos')) {
+            return $query;
         }
 
-        return $query;
+        return $query->whereIn('vehiculo_id', FlotaScope::idsVehiculosUsuario());
     }
 
     public static function form(Form $form): Form
