@@ -142,14 +142,19 @@ class ReporteCombustibleCopiaService
         return $this->cargasConRendimientoReal($filters)
             ->groupBy('vehiculo_id')
             ->map(function (Collection $cargas) {
-                $primeraCarga = $cargas->first();
+                $cargasCronologicas = $cargas->sortBy(fn ($carga) => [
+                    $carga->fecha_carga?->timestamp ?? 0,
+                    $carga->id,
+                ])->values();
+                $cargasValidas = $cargasCronologicas->filter(
+                    fn ($carga) => $carga->km_recorridos_reporte !== null
+                )->values();
+                $primeraCarga = $cargasCronologicas->first();
                 $vehiculo = $primeraCarga->vehiculo;
                 $km = $cargas->sum(fn ($carga) => (float) ($carga->km_recorridos_reporte ?? 0));
-                $litrosCargados = $cargas->sum(function ($carga) {
-                    return $carga->km_recorridos_reporte !== null
-                        ? (float) $carga->litros
-                        : 0;
-                });
+                $litrosCargados = $cargasValidas->sum(fn ($carga) => (float) $carga->litros);
+                $primeraCargaValida = $cargasValidas->first();
+                $ultimaCargaValida = $cargasValidas->last();
 
                 return (object) [
                     'vehiculo_id' => $vehiculo?->id,
@@ -161,14 +166,43 @@ class ReporteCombustibleCopiaService
                     'localidad' => $vehiculo?->localidadActiva?->localidad?->nombre,
                     'usuarios_asignados' => $vehiculo?->usuarios_asignados_texto,
                     'usuario_responsable' => $vehiculo?->usuario_responsable_texto,
+                    'tarjeta' => $vehiculo?->tarjetaActiva?->tarjeta?->numero,
+                    'odometro_inicial' => $primeraCargaValida?->odometro_anterior_reporte,
+                    'odometro_final' => $ultimaCargaValida?->km_odometro,
                     'rendimiento_optimo_km_l' => $vehiculo?->rendimiento_optimo_km_l,
                     'km_recorridos' => $km,
                     'litros' => $litrosCargados,
                     'litros_cargados' => $litrosCargados,
+                    'rendimiento_real' => $litrosCargados > 0 ? $km / $litrosCargados : null,
                     'importe' => $cargas->sum(fn ($carga) => (float) $carga->importe),
                 ];
             })
             ->values();
+    }
+
+    public function datosReporte(array $filters): Collection
+    {
+        $filters = $this->normalizarFiltros($filters);
+
+        return $filters['vehiculo']
+            ? $this->cargasConRendimientoReal($filters)
+            : $this->resumenVehiculos($filters);
+    }
+
+    public function totalesReporte(array $filters): object
+    {
+        $cargas = $this->cargasConRendimientoReal($filters);
+        $km = $cargas->sum(fn ($carga) => (float) ($carga->km_recorridos_reporte ?? 0));
+        $litros = $cargas->filter(
+            fn ($carga) => $carga->km_recorridos_reporte !== null
+        )->sum(fn ($carga) => (float) $carga->litros);
+
+        return (object) [
+            'km' => $km,
+            'litros' => $litros,
+            'rendimiento' => $litros > 0 ? $km / $litros : 0,
+            'importe' => $cargas->sum(fn ($carga) => (float) $carga->importe),
+        ];
     }
 
     private function queryRendimientoReal(array $filters)

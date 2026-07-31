@@ -26,6 +26,7 @@ class ReporteCombustibleCopia extends Page
     public $fecha_fin;
 
     protected ?Collection $cargasReporte = null;
+    protected ?object $totalesReporte = null;
 
     public function mount()
     {
@@ -45,6 +46,28 @@ class ReporteCombustibleCopia extends Page
     {
         return $this->cargasReporte ??= app(ReporteCombustibleCopiaService::class)
             ->cargasConRendimientoReal($this->filters());
+    }
+
+    public function updated($property): void
+    {
+        if (in_array($property, [
+            'vehiculo_id',
+            'cuenta_analitica_id',
+            'departamento_id',
+            'localidad_id',
+            'tipo_combustible',
+            'fecha_inicio',
+            'fecha_fin',
+        ], true)) {
+            $this->cargasReporte = null;
+            $this->totalesReporte = null;
+        }
+    }
+
+    private function totalesReporte(): object
+    {
+        return $this->totalesReporte ??= app(ReporteCombustibleCopiaService::class)
+            ->totalesReporte($this->filters());
     }
 
     /*
@@ -67,33 +90,22 @@ class ReporteCombustibleCopia extends Page
 
     public function totalImporte()
     {
-        return $this->cargas()->sum(fn ($carga) => (float) $carga->importe);
+        return $this->totalesReporte()->importe;
     }
 
     public function totalLitrosCargados()
     {
-        return $this->cargas()->sum(function ($carga) {
-            return $carga->km_recorridos_reporte !== null
-                ? (float) $carga->litros
-                : 0;
-        });
+        return $this->totalesReporte()->litros;
     }
 
     public function totalKm()
     {
-        return $this->cargas()->sum(fn ($carga) => (float) ($carga->km_recorridos_reporte ?? 0));
+        return $this->totalesReporte()->km;
     }
 
     public function rendimientoGlobal()
     {
-        $km = $this->totalKm();
-        $litros = $this->totalLitrosCargados();
-
-        if ($litros == 0) {
-            return 0;
-        }
-
-        return $km / $litros;
+        return $this->totalesReporte()->rendimiento;
     }
 
     /*

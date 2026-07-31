@@ -160,17 +160,23 @@ Exportar Excel
 <th class="whitespace-nowrap px-3 py-3 text-left">Departamento</th>
 <th class="whitespace-nowrap px-3 py-3 text-left">Usuarios asignados</th>
 <th class="whitespace-nowrap px-3 py-3 text-left">Usuario responsable</th>
+@if($vehiculo_id)
 <th class="whitespace-nowrap px-3 py-3 text-left">Fecha</th>
+@endif
 <th class="whitespace-nowrap px-3 py-3 text-center">Tarjeta</th>
-<th class="whitespace-nowrap px-3 py-3 text-right">Odómetro</th>
-<th class="whitespace-nowrap px-3 py-3 text-right">Odómetro anterior</th>
+<th class="whitespace-nowrap px-3 py-3 text-right">{{ $vehiculo_id ? 'Odómetro' : 'Odómetro inicial' }}</th>
+<th class="whitespace-nowrap px-3 py-3 text-right">{{ $vehiculo_id ? 'Odómetro anterior' : 'Odómetro final' }}</th>
 <th class="whitespace-nowrap px-3 py-3 text-right">KM recorridos</th>
-<th class="whitespace-nowrap px-3 py-3 text-right">Litros cargados/comprados</th>
+<th class="whitespace-nowrap px-3 py-3 text-right">Litros cargados</th>
 <th class="whitespace-nowrap px-3 py-3 text-right">Rendimiento Real</th>
 <th class="whitespace-nowrap px-3 py-3 text-right">Rendimiento Óptimo</th>
+@if($vehiculo_id)
 <th class="whitespace-nowrap px-3 py-3 text-right">Precio/L</th>
+@endif
 <th class="whitespace-nowrap px-3 py-3 text-right">Importe</th>
+@if($vehiculo_id)
 <th class="whitespace-nowrap px-3 py-3 text-left">Cuenta Analítica</th>
+@endif
 
 </tr>
 
@@ -197,16 +203,22 @@ Exportar Excel
 <td class="whitespace-nowrap px-3 py-3 text-left">{{ $v->departamento ?? '-' }}</td>
 <td class="px-3 py-3 text-left">{{ $v->usuarios_asignados ?? '-' }}</td>
 <td class="px-3 py-3 text-left">{{ $v->usuario_responsable ?? '-' }}</td>
+@if($vehiculo_id)
 <td class="whitespace-nowrap px-3 py-3 text-left text-gray-500">-</td>
-<td class="whitespace-nowrap px-3 py-3 text-center text-gray-500">-</td>
-<td class="whitespace-nowrap px-3 py-3 text-right text-gray-500">-</td>
-<td class="whitespace-nowrap px-3 py-3 text-right text-gray-500">-</td>
+@endif
+<td class="whitespace-nowrap px-3 py-3 text-center">{{ $v->tarjeta ?? '-' }}</td>
+<td class="whitespace-nowrap px-3 py-3 text-right">
+{{ $v->odometro_inicial !== null ? number_format($v->odometro_inicial, 0) : '-' }}
+</td>
+<td class="whitespace-nowrap px-3 py-3 text-right">
+{{ $v->odometro_final !== null ? number_format($v->odometro_final, 0) : '-' }}
+</td>
 <td class="whitespace-nowrap px-3 py-3 text-right">{{ number_format($v->km_recorridos,0) }}</td>
 <td class="whitespace-nowrap px-3 py-3 text-right">{{ number_format($v->litros_cargados,3) }}</td>
 <td class="whitespace-nowrap px-3 py-3 text-right">
 
-@if($v->litros_cargados > 0)
-{{ number_format($v->km_recorridos / $v->litros_cargados,2) }}
+@if($v->rendimiento_real !== null)
+{{ number_format($v->rendimiento_real,2) }}
 @else
 0
 @endif
@@ -215,11 +227,11 @@ Exportar Excel
 
 <td class="whitespace-nowrap px-3 py-3 text-right">{{ number_format($v->rendimiento_optimo_km_l,2) }}</td>
 
-<td class="whitespace-nowrap px-3 py-3 text-right text-gray-500">-</td>
-
 <td class="whitespace-nowrap px-3 py-3 text-right font-medium">{{ number_format($v->importe,2) }}</td>
 
+@if($vehiculo_id)
 <td class="whitespace-nowrap px-3 py-3 text-left text-gray-500">-</td>
+@endif
 
 </tr>
 
@@ -286,7 +298,7 @@ Exportar Excel
 
 <tr class="border-t bg-gray-50 font-bold dark:bg-gray-800">
 
-<td colspan="12" class="whitespace-nowrap px-3 py-3 text-left">
+<td colspan="{{ $vehiculo_id ? 12 : 11 }}" class="whitespace-nowrap px-3 py-3 text-left">
 
 TOTALES
 
@@ -312,7 +324,9 @@ TOTALES
 
 <td class="px-3 py-3"></td>
 
+@if($vehiculo_id)
 <td class="px-3 py-3"></td>
+@endif
 
 <td class="whitespace-nowrap px-3 py-3 text-right">
 
@@ -320,7 +334,9 @@ $ {{ number_format($this->totalImporte(),2) }}
 
 </td>
 
+@if($vehiculo_id)
 <td class="px-3 py-3"></td>
+@endif
 
 </tr>
 
