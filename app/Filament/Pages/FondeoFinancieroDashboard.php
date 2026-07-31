@@ -686,6 +686,7 @@ class FondeoFinancieroDashboard extends Page implements HasTable
         return auth()->user()->hasAnyRole([
             'admin',
             'fondeo',
+            'activos',
         ]);
     }
 }

@@ -164,6 +164,7 @@ class TarjetaSaldoMovimientoResource extends Resource
         return auth()->user()->hasAnyRole([
             'admin',
             'fondeo',
+            'activos',
         ]);
     }
 

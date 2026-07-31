@@ -27,12 +27,12 @@ class SolicitudCargaCombustibleResource extends Resource
 
     public static function canViewAny(): bool
     {
-        return auth()->user()->hasAnyRole(['admin', 'responsable']);
+        return auth()->user()->hasAnyRole(['admin', 'responsable', 'activos']);
     }
 
     public static function shouldRegisterNavigation(): bool
     {
-        return auth()->user()->hasAnyRole(['admin', 'responsable']);
+        return auth()->user()->hasAnyRole(['admin', 'responsable', 'activos']);
     }
 
     public static function canCreate(): bool
