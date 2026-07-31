@@ -105,8 +105,8 @@ class Sidebar extends Component
                         ),
                     ]),
                     $this->buildSection('Reportes', 'heroicon-o-chart-bar', [
-                        $this->pageItem('Reporte Combustible', 'heroicon-o-presentation-chart-line', ReporteCombustible::class),
-                        $this->pageItem('Reporte Combustible Copia', 'heroicon-o-presentation-chart-line', ReporteCombustibleCopia::class),
+                        
+                        $this->pageItem('Reporte Combustible', 'heroicon-o-presentation-chart-line', ReporteCombustibleCopia::class),
                     ]),
                     
                 ],
