@@ -22,6 +22,7 @@ class DatabaseSeeder extends Seeder
             ParametroSistemaSeeder::class,
             MotivoAuditoriaSeeder::class,
             RoleSeeder::class,
+            PermissionSeeder::class,
             TipoPagoSeeder::class,
             AsegoradoraSeeder::class,
             TipoDocumentoSeeder::class,
