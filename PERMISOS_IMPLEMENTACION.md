@@ -4,17 +4,17 @@
 
 1. **ETAPA 1 — Diagnóstico del comportamiento actual**: inventario de roles, comprobaciones rígidas, módulos, páginas, acciones, alcance de datos e inconsistencias. No cambia autorización.
 2. **ETAPA 2 — Diseño y registro técnico**: confirmar el catálogo, decidir la equivalencia de roles y registrar permisos/relaciones en Spatie.
-3. **ETAPA 3 — Migración de comprobaciones**: sustituir comprobaciones de roles por permisos, manteniendo las mismas decisiones efectivas y sin mover `FlotaScope`.
+3. **ETAPA 3 — Administración de permisos**: incorporar la interfaz de consulta/asignación de permisos dentro de `RoleResource`, manteniendo las mismas decisiones efectivas y sin mover `FlotaScope`.
 4. **ETAPA 4 — Navegación y acciones Filament**: alinear sidebar, páginas, recursos y acciones con permisos; revisar acciones `visible()` sin convertirlas en alcance de datos.
 5. **ETAPA 5 — Pruebas y estabilización**: pruebas por rol, regresión de acciones, revisión de acceso directo y validación de que el alcance de registros permanece intacto.
 
 ## 2. Etapa actual
 
-**ETAPA 2 — Catálogo y asignación inicial completada.**
+**ETAPA 3 — Administración de permisos en RoleResource completada.**
 
 Se revisaron con búsquedas `rg` las apariciones de `hasRole()`, `hasAnyRole()`, `canAccess()`, `canViewAny()`, `canCreate()`, `canEdit()`, `canDelete()`, `visible()` y `FlotaScope`, además de los recursos, páginas, sidebar, modelo `User`, `RoleSeeder`, proveedores y pruebas directamente relacionadas.
 
-La ETAPA 1 fue corregida con la decisión funcional aprobada para `chofer` y la ETAPA 2 creó el catálogo central, el seeder idempotente, el rol `fondeo`, las asignaciones iniciales por rol y las pruebas focalizadas. No se modificó la lógica de autorización Filament ni la lógica de alcance de información. `FlotaScope` continúa siendo el mecanismo que determina qué vehículos puede consultar cada usuario.
+La ETAPA 1 fue corregida con la decisión funcional aprobada para `chofer`, la ETAPA 2 creó el catálogo central y la ETAPA 3 incorporó la administración de permisos dentro de `RoleResource`. Sólo se modificó la autorización de la administración de roles; no se migraron los demás recursos ni páginas. `FlotaScope` continúa siendo el mecanismo que determina qué vehículos puede consultar cada usuario.
 
 ### Roles detectados
 
@@ -35,14 +35,21 @@ La ETAPA 1 fue corregida con la decisión funcional aprobada para `chofer` y la 
 - `database/seeders/RoleSeeder.php` — registro del rol `fondeo`.
 - `database/seeders/DatabaseSeeder.php` — inclusión de `PermissionSeeder`.
 - `tests/Feature/PermissionSeederTest.php` — pruebas focalizadas de catálogo, idempotencia y asignaciones.
+- `app/Filament/Resources/RoleResource.php` — interfaz agrupada, controles de acceso y sincronización de permisos.
+- `app/Filament/Resources/RoleResource/Pages/CreateRole.php` — sincronización de permisos al crear roles.
+- `app/Filament/Resources/RoleResource/Pages/EditRole.php` — hidratación, sincronización y protecciones del rol `admin`.
+- `tests/Feature/RoleResourceTest.php` — pruebas de acceso, edición, protección y relación de permisos.
 
-No se modificaron `RoleResource`, recursos Filament, páginas, navegación, políticas, consultas, filtros ni `FlotaScope`.
+No se modificaron recursos Filament distintos de `RoleResource`, navegación de otros módulos, políticas, consultas, filtros ni `FlotaScope`.
 
 ## 4. Decisiones tomadas
 
 - El diagnóstico separa **autorización de acciones** de **alcance de registros**. En ETAPA 2/3 los permisos deberán controlar acceso a módulos, consulta, creación, edición y eliminación; `FlotaScope` seguirá controlando los vehículos consultables.
 - Se conserva como línea base el comportamiento actual de las listas rígidas de roles. `administracion` se conserva sin permisos nuevos y `fondeo` se registra con los permisos financieros aprobados.
 - La decisión funcional aprobada más reciente reemplaza la conclusión anterior de ETAPA 1 sobre `chofer`: no recibe permisos de reportes, documentos, vehículos generales, cargas generales, catálogos, usuarios, roles ni configuración. Sólo recibe `pagina.mis-vehiculos.view`, `carga-combustible.view` y `carga-combustible.create`; el alcance de datos no se modifica.
+- La administración de roles usa `rol.view`, `rol.create`, `rol.update` y `rol.delete`; no se agregó un permiso fuera del catálogo aprobado.
+- La pantalla usa `config/permissions.php` como única fuente de opciones, agrupa casillas en módulos, páginas, recursos y operaciones, genera etiquetas comprensibles y permite búsqueda/selección masiva por grupo.
+- La relación de Spatie se actualiza mediante `syncPermissions`; no se asignan permisos directos a usuarios.
 - No se propuso instalar Filament Shield ni ningún paquete adicional. El proyecto ya requiere `spatie/laravel-permission` 6.x y `User` usa `HasRoles`.
 - La matriz siguiente representa controles explícitos encontrados en el código. `V`, `C`, `E` y `D` significan `canViewAny`, `canCreate`, `canEdit` y `canDelete`; `—` significa que ese método no tiene una comprobación rígida explícita en el recurso, no que el acceso efectivo quede automáticamente resuelto.
 
@@ -193,6 +200,24 @@ Este mapeo queda documentado para etapas posteriores y no se aplicó todavía en
 | Reporte Documentos | `pagina.reporte-documentos.view` |
 | Recursos Filament | `<recurso>.view` |
 
+### Diseño implementado en RoleResource
+
+- El listado muestra la cantidad de permisos mediante `permissions_count`.
+- El formulario de creación y edición muestra cuatro secciones plegables: Módulos, Páginas, Recursos y Operaciones.
+- Las secciones usan `CheckboxList` con búsqueda, selección/deselección masiva y tres columnas para evitar una lista plana de 134 casillas.
+- En edición, las casillas se hidratan desde `Role::permissions`; al guardar se sincroniza la relación many-to-many de Spatie.
+- Las opciones se construyen desde `config/permissions.php`; los nombres técnicos no se duplican en `RoleResource`.
+
+### Protecciones implementadas
+
+- El acceso al catálogo requiere `rol.view`; crear, editar y eliminar requieren `rol.create`, `rol.update` y `rol.delete`, respectivamente.
+- La protección se aplica en el recurso y, por tanto, también al acceso directo por URL; no depende sólo del sidebar.
+- El rol `admin` no puede eliminarse individualmente ni mediante eliminación masiva.
+- El nombre `admin` queda bloqueado y cualquier intento de guardarlo con otro nombre se restaura a `admin`.
+- El rol `admin` mantiene siempre los 134 permisos, aunque el estado enviado no los incluya; se muestra una notificación explicativa.
+- Si el usuario que edita un rol pertenece a ese mismo rol, se conservan sus permisos `rol.*` para evitar perder la administración accidentalmente.
+- `administracion` permanece visible y con cero permisos hasta que un administrador decida modificarlo explícitamente.
+
 ## 5. Pruebas realizadas
 
 - Búsqueda estática con `rg` de todas las funciones y símbolos solicitados.
@@ -200,19 +225,21 @@ Este mapeo queda documentado para etapas posteriores y no se aplicó todavía en
 - Revisión de `tests/Feature/FlotaScopeVisibilityTest.php` y `tests/Feature/CargaCombustibleCreatePageTest.php` como evidencia del comportamiento actual de alcance y roles combinados.
 - `php artisan test tests/Feature/PermissionSeederTest.php`: **4 pruebas, 16 aserciones, PASS**.
 - `php artisan test tests/Feature/PermissionSeederTest.php tests/Feature/FlotaScopeVisibilityTest.php tests/Feature/CargaCombustibleCreatePageTest.php`: **11 pruebas, 28 aserciones, PASS**.
+- `php artisan test tests/Feature/RoleResourceTest.php tests/Feature/PermissionSeederTest.php`: **9 pruebas, 33 aserciones, PASS**.
+- Las pruebas de `RoleResource` cubren acceso autorizado, rechazo por URL directa, hidratación de permisos, actualización sin duplicados, ausencia de permisos directos a usuarios, protección de `admin` y permanencia de `administracion` con cero permisos.
 - Se verificó sintaxis PHP de `config/permissions.php`, `PermissionSeeder.php`, `RoleSeeder.php` y `PermissionSeederTest.php`.
 - Se comprobó idempotencia mediante dos ejecuciones del seeder dentro de la prueba, sin duplicar permisos, roles ni relaciones.
 - Se verificó la existencia de `fondeo`, los 134 permisos de `admin`, los 0 permisos de `administracion` y la ausencia de permisos administrativos en `responsable` y `chofer`.
 - La consulta segura de usuarios con `administracion` permanece pendiente: la base MySQL local no pudo conectar; no se ejecutó ningún seeder contra esa base.
 - No se ejecutaron migraciones, seeders ni cambios en producción. No se ejecutaron comandos destructivos.
 
-## 6. Trabajo pendiente para ETAPA 3
+## 6. Trabajo pendiente para ETAPA 4
 
-- Sustituir progresivamente `hasRole()`/`hasAnyRole()` por permisos, sin modificar todavía `FlotaScope` ni los filtros.
-- Alinear `canAccess()`, `canViewAny()`, `canCreate()`, `canEdit()`, `canDelete()` y `visible()` con el catálogo y la matriz aplicada.
-- Aplicar el mapeo de permisos al sidebar y a la navegación de Filament.
+- Migrar los recursos y páginas restantes para utilizar el catálogo, sin modificar `FlotaScope` ni los filtros.
+- Aplicar el mapeo de permisos al sidebar y a la navegación de los módulos restantes.
 - Revisar la discrepancia entre la lógica actual de `ReporteDocumentos::canAccess()` y el permiso inicial restringido de `chofer`.
-- Revisar el acceso directo a rutas para impedir que la navegación sea la única barrera.
+- Alinear `canAccess()`, `canViewAny()`, `canCreate()`, `canEdit()`, `canDelete()` y `visible()` en los módulos autorizados.
+- Revisar el acceso directo a rutas de recursos y páginas restantes.
 - Añadir pruebas de autorización por rol sin alterar el alcance de registros.
 - Revisar notificaciones basadas en `User::role()` cuando se confirme el nuevo catálogo.
 - Consultar usuarios con `administracion` cuando la base local esté disponible; no se asignarán permisos nuevos sin una decisión posterior.
@@ -226,9 +253,10 @@ Este mapeo queda documentado para etapas posteriores y no se aplicó todavía en
 - `TarjetaCombustibleResource` usa `canAccess()` y no el patrón CRUD habitual, por lo que no debe traducirse mecánicamente.
 - Algunas reglas combinan rol y propiedad/asignación de registro. Sustituirlas sólo por permisos globales podría ampliar acceso indebidamente.
 - `FlotaScope` considera `fondeo` un rol con acceso global a vehículos activos; esa lógica no se modificó.
-- La lógica actual de `canAccess()` aún puede mostrar o permitir opciones a `chofer` que el catálogo ya no le asigna; la corrección de esas comprobaciones pertenece a ETAPA 3.
+- La lógica actual de `canAccess()` aún puede mostrar o permitir opciones a `chofer` que el catálogo ya no le asigna; la corrección de esas comprobaciones pertenece a ETAPA 4.
+- La interfaz de `RoleResource` ya respeta permisos, pero los demás módulos todavía conservan comprobaciones rígidas por rol hasta ETAPA 4.
 - Los usuarios con roles combinados (`chofer` + `responsable`) tienen comportamiento probado específicamente; la migración debe preservar la unión de sus asignaciones.
 
-## Estado al cierre de ETAPA 2
+## Estado al cierre de ETAPA 3
 
-La ETAPA 2 queda completada. No se inició la ETAPA 3: no se reemplazaron comprobaciones rígidas, no se modificaron métodos de autorización Filament, no se modificó la navegación y no se cambió `FlotaScope` ni ningún filtro de alcance.
+La ETAPA 3 queda completada. No se inició la ETAPA 4: no se migraron recursos o páginas restantes, no se cambió la navegación de otros módulos y no se modificó `FlotaScope` ni ningún filtro de alcance.
