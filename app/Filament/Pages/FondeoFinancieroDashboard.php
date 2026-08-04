@@ -276,7 +276,10 @@ class FondeoFinancieroDashboard extends Page implements HasTable
             ->actions([
                 Tables\Actions\Action::make('fondear')
                     ->label('Fondear')
-                    ->visible(fn (TarjetaCombustible $record): bool => $this->puedeFondearTarjeta($record))
+                    ->visible(fn (TarjetaCombustible $record): bool =>
+                        (auth()->user()?->can('fondeo-financiero.fondear') ?? false)
+                        && $this->puedeFondearTarjeta($record))
+                    ->authorize(fn () => auth()->user()?->can('fondeo-financiero.fondear') ?? false)
                     ->form([
                         TextInput::make('importe_fondeado')
                             ->label('Monto real a fondear')
@@ -324,7 +327,10 @@ class FondeoFinancieroDashboard extends Page implements HasTable
 
                 Tables\Actions\Action::make('retirar')
                     ->label('Retirar')
-                    ->visible(fn (TarjetaCombustible $record): bool => $this->puedeRetirarTarjeta($record))
+                    ->visible(fn (TarjetaCombustible $record): bool =>
+                        (auth()->user()?->can('fondeo-financiero.retirar') ?? false)
+                        && $this->puedeRetirarTarjeta($record))
+                    ->authorize(fn () => auth()->user()?->can('fondeo-financiero.retirar') ?? false)
                     ->form($this->buildRetiroForm())
                     ->action(function (TarjetaCombustible $record, array $data): void {
                         $monto = abs((float) $data['monto']);
@@ -355,7 +361,10 @@ class FondeoFinancieroDashboard extends Page implements HasTable
 
                 Tables\Actions\Action::make('transferir')
                     ->label('Transferir')
-                    ->visible(fn (TarjetaCombustible $record): bool => $this->puedeTransferirTarjeta($record))
+                    ->visible(fn (TarjetaCombustible $record): bool =>
+                        (auth()->user()?->can('fondeo-financiero.transferir') ?? false)
+                        && $this->puedeTransferirTarjeta($record))
+                    ->authorize(fn () => auth()->user()?->can('fondeo-financiero.transferir') ?? false)
                     ->form([
                         Select::make('tarjeta_destino_id')
                             ->label('Tarjeta destino')
@@ -683,10 +692,11 @@ class FondeoFinancieroDashboard extends Page implements HasTable
 
     public static function canAccess(): bool
     {
-        return auth()->user()->hasAnyRole([
-            'admin',
-            'fondeo',
-            'activos',
-        ]);
+        return auth()->user()?->can('pagina.fondeo-financiero.view') ?? false;
+    }
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return static::canAccess();
     }
 }

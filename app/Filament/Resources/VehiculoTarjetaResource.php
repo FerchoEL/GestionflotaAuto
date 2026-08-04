@@ -29,22 +29,32 @@ class VehiculoTarjetaResource extends Resource
 
     public static function canViewAny(): bool
     {
-        return auth()->user()->hasAnyRole(['admin', 'activos']);
+        return auth()->user()?->can('vehiculo-tarjeta.view') ?? false;
+    }
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return auth()->user()?->can('vehiculo-tarjeta.view') ?? false;
     }
 
     public static function canCreate(): bool
     {
-        return auth()->user()->hasAnyRole(['admin', 'activos']);
+        return auth()->user()?->can('vehiculo-tarjeta.create') ?? false;
     }
 
     public static function canEdit($record): bool
     {
-        return auth()->user()->hasAnyRole(['admin', 'activos']);
+        return auth()->user()?->can('vehiculo-tarjeta.update') ?? false;
     }
 
     public static function canDelete($record): bool
     {
-        return auth()->user()->hasRole('admin');
+        return auth()->user()?->hasRole('admin') ?? false;
+    }
+
+    public static function canDeleteAny(): bool
+    {
+        return auth()->user()?->hasRole('admin') ?? false;
     }
 
     public static function form(Form $form): Form

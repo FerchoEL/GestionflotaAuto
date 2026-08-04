@@ -5,16 +5,17 @@
 1. **ETAPA 1 — Diagnóstico del comportamiento actual**: inventario de roles, comprobaciones rígidas, módulos, páginas, acciones, alcance de datos e inconsistencias. No cambia autorización.
 2. **ETAPA 2 — Diseño y registro técnico**: confirmar el catálogo, decidir la equivalencia de roles y registrar permisos/relaciones en Spatie.
 3. **ETAPA 3 — Administración de permisos**: incorporar la interfaz de consulta/asignación de permisos dentro de `RoleResource`, manteniendo las mismas decisiones efectivas y sin mover `FlotaScope`.
-4. **ETAPA 4 — Navegación y acciones Filament**: alinear sidebar, páginas, recursos y acciones con permisos; revisar acciones `visible()` sin convertirlas en alcance de datos.
-5. **ETAPA 5 — Pruebas y estabilización**: pruebas por rol, regresión de acciones, revisión de acceso directo y validación de que el alcance de registros permanece intacto.
+4. **ETAPA 4A — Entrada a módulos y páginas**: alinear navegación, `canViewAny()` y `canAccess()` con permisos; mantener intactas las acciones y el alcance de datos.
+5. **ETAPA 4B — Acciones Filament**: migrar creación, edición, eliminación, exportaciones y acciones visibles.
+6. **ETAPA 5 — Pruebas y estabilización**: pruebas por rol, regresión de acciones, revisión de acceso directo y validación de que el alcance de registros permanece intacto.
 
 ## 2. Etapa actual
 
-**ETAPA 3 — Administración de permisos en RoleResource completada.**
+**ETAPA 4B — Acciones Filament completada.**
 
 Se revisaron con búsquedas `rg` las apariciones de `hasRole()`, `hasAnyRole()`, `canAccess()`, `canViewAny()`, `canCreate()`, `canEdit()`, `canDelete()`, `visible()` y `FlotaScope`, además de los recursos, páginas, sidebar, modelo `User`, `RoleSeeder`, proveedores y pruebas directamente relacionadas.
 
-La ETAPA 1 fue corregida con la decisión funcional aprobada para `chofer`, la ETAPA 2 creó el catálogo central y la ETAPA 3 incorporó la administración de permisos dentro de `RoleResource`. Sólo se modificó la autorización de la administración de roles; no se migraron los demás recursos ni páginas. `FlotaScope` continúa siendo el mecanismo que determina qué vehículos puede consultar cada usuario.
+La ETAPA 1 fue corregida con la decisión funcional aprobada para `chofer`, la ETAPA 2 creó el catálogo central, la ETAPA 3 incorporó la administración de permisos dentro de `RoleResource` y la ETAPA 4A conectó los permisos de vista con Resources y Pages. No se migraron acciones CRUD ni alcances de registros. `FlotaScope` continúa siendo el mecanismo que determina qué vehículos puede consultar cada usuario.
 
 ### Roles detectados
 
@@ -39,8 +40,10 @@ La ETAPA 1 fue corregida con la decisión funcional aprobada para `chofer`, la E
 - `app/Filament/Resources/RoleResource/Pages/CreateRole.php` — sincronización de permisos al crear roles.
 - `app/Filament/Resources/RoleResource/Pages/EditRole.php` — hidratación, sincronización y protecciones del rol `admin`.
 - `tests/Feature/RoleResourceTest.php` — pruebas de acceso, edición, protección y relación de permisos.
+- `tests/Feature/Stage4AAuthorizationTest.php` — pruebas de navegación, acceso por permiso, URL directa y acceso por rol.
+- `tests/Feature/FlotaScopeVisibilityTest.php` — preparación de permisos para conservar la regresión de alcance tras migrar `canAccess()`.
 
-No se modificaron recursos Filament distintos de `RoleResource`, navegación de otros módulos, políticas, consultas, filtros ni `FlotaScope`.
+No se modificaron políticas, consultas, filtros, `getEloquentQuery()` ni `FlotaScope`. La ETAPA 4B sí actualizó controles de acciones y métodos CRUD donde existía una correspondencia clara con el catálogo vigente.
 
 ## 4. Decisiones tomadas
 
@@ -50,6 +53,7 @@ No se modificaron recursos Filament distintos de `RoleResource`, navegación de 
 - La administración de roles usa `rol.view`, `rol.create`, `rol.update` y `rol.delete`; no se agregó un permiso fuera del catálogo aprobado.
 - La pantalla usa `config/permissions.php` como única fuente de opciones, agrupa casillas en módulos, páginas, recursos y operaciones, genera etiquetas comprensibles y permite búsqueda/selección masiva por grupo.
 - La relación de Spatie se actualiza mediante `syncPermissions`; no se asignan permisos directos a usuarios.
+- En ETAPA 4A, `shouldRegisterNavigation()`, `canViewAny()` y `canAccess()` usan el mismo permiso `view` aprobado para cada sección; la navegación y la URL directa quedan alineadas.
 - No se propuso instalar Filament Shield ni ningún paquete adicional. El proyecto ya requiere `spatie/laravel-permission` 6.x y `User` usa `HasRoles`.
 - La matriz siguiente representa controles explícitos encontrados en el código. `V`, `C`, `E` y `D` significan `canViewAny`, `canCreate`, `canEdit` y `canDelete`; `—` significa que ese método no tiene una comprobación rígida explícita en el recurso, no que el acceso efectivo quede automáticamente resuelto.
 
@@ -88,7 +92,7 @@ No se modificaron recursos Filament distintos de `RoleResource`, navegación de 
 
 #### Recursos con autorización explícita incompleta
 
-- `AseguradoraResource`, `PolizaSeguroResource` y `TipoPagoResource` no sobrescriben `canViewAny`, `canCreate`, `canEdit` ni `canDelete`, aunque exponen formularios, edición, eliminación y eliminación masiva. El catálogo ya registra la decisión aprobada para `admin` y `activos`; la aplicación efectiva de esos permisos queda para ETAPA 3.
+- `AseguradoraResource`, `PolizaSeguroResource` y `TipoPagoResource` no sobrescriben `canCreate`, `canEdit` ni `canDelete`, aunque exponen formularios, edición, eliminación y eliminación masiva. El catálogo y el control de entrada ya están aplicados para `admin` y `activos`; las acciones quedan para ETAPA 4B.
 - `SolicitudCargaCombustibleResource` fuerza `canCreate()` y `canDelete()` a `false`, pero no define `canEdit()` aunque tiene páginas de edición. Esto requiere validar el comportamiento real antes de migrarlo.
 - `TarjetaCombustibleResource` usa `canAccess()` en lugar del conjunto usual de acciones de recurso.
 - `DepartamentoResource`, `VehiculoDepartamentoResource`, `VehiculoCuentaAnaliticaResource` y `VehiculoChoferResource` sólo tienen `canViewAny()` explícito; sus acciones de formulario no están expresamente restringidas en el recurso.
@@ -103,7 +107,7 @@ No se modificaron recursos Filament distintos de `RoleResource`, navegación de 
 | `RegistrarCargaExtemporanea` | `admin`, `responsable` |
 | `ReporteCombustible` | `admin`, `responsable` |
 | `ReporteCombustibleCopia` | `admin`, `responsable`, `activos` |
-| `ReporteDocumentos` | `admin`, `activos`, `responsable`, `chofer` en la lógica actual; el permiso inicial de `chofer` queda revocado por la decisión funcional aprobada y no se cambiará `canAccess()` hasta ETAPA 3. |
+| `ReporteDocumentos` | `admin`, `activos`, `responsable`, `chofer` en la lógica histórica; ahora `canAccess()` usa `pagina.reporte-documentos.view`, por lo que `chofer` no entra con sus 0 permisos de reporte. |
 
 Además, el sidebar de `app/Livewire/Admin/Sidebar.php` sólo agrega el módulo **Configuración** para `admin` o `activos`. Los elementos de navegación se vuelven a filtrar mediante `User::can('viewAny', ...)` o `Resource::canAccess()`, y las páginas mediante `User::can('viewAny', ...)` o `Page::canAccess()`.
 
@@ -124,7 +128,7 @@ Además, el sidebar de `app/Livewire/Admin/Sidebar.php` sólo agrega el módulo 
 - Otros roles: reciben una consulta vacía.
 - Usuario no autenticado: recibe una consulta vacía.
 
-Los servicios de reportes y varios recursos aplican la misma idea mediante `FlotaScope::idsVehiculosUsuario()`. Este comportamiento queda fuera de la ETAPA 1 de migración de permisos y no debe alterarse al convertir acciones a permisos.
+Los servicios de reportes y varios recursos aplican la misma idea mediante `FlotaScope::idsVehiculosUsuario()`. Este comportamiento queda fuera de la migración de permisos de entrada y no debe alterarse al convertir acciones a permisos.
 
 ### Inconsistencia `administracion` vs. `fondeo` y resolución en ETAPA 2
 
@@ -152,7 +156,7 @@ El catálogo aprobado quedó centralizado en `config/permissions.php`, con nombr
 
 **Permisos CRUD por recurso**
 
-Para cada recurso aplicable, usar el patrón `<recurso>.view`, `<recurso>.create`, `<recurso>.update`, `<recurso>.delete`. El inventario mínimo es:
+Para cada recurso aplicable se usan los permisos presentes en el catálogo. En esta versión existen permisos `view`, `create` y `update` para los recursos declarados, pero no existe ningún permiso `*.delete`; las eliminaciones explícitamente existentes conservan la regla actual del rol `admin` y quedan identificadas como pendiente de decisión antes de introducir un permiso nuevo.
 
 `carga-combustible`, `solicitud-carga-combustible`, `tarjeta-combustible`, `tarjeta-saldo-movimiento`, `fondeo`, `vehiculo-fondeo-config`, `vehiculo`, `vehiculo-documento`, `alerta-documento`, `alerta-rendimiento`, `centro-costo`, `cuenta-concentradora`, `departamento`, `localidad`, `marca-vehiculo`, `tipo-documento`, `tipo-vehiculo`, `vehiculo-estatus`, `vehiculo-localidad`, `vehiculo-departamento`, `vehiculo-cuenta-analitica`, `vehiculo-tarjeta`, `vehiculo-responsable`, `vehiculo-chofer`, `usuario`, `rol`, `aseguradora`, `poliza-seguro` y `tipo-pago`.
 
@@ -218,6 +222,114 @@ Este mapeo queda documentado para etapas posteriores y no se aplicó todavía en
 - Si el usuario que edita un rol pertenece a ese mismo rol, se conservan sus permisos `rol.*` para evitar perder la administración accidentalmente.
 - `administracion` permanece visible y con cero permisos hasta que un administrador decida modificarlo explícitamente.
 
+## ETAPA 4A — Resources y Pages migrados
+
+En todos los casos de esta tabla, el permiso indicado controla tanto `shouldRegisterNavigation()` como `canViewAny()` o `canAccess()`. Filament aplica el mismo control al acceso directo por URL. No se modificaron `canCreate()`, `canEdit()`, `canDelete()`, `visible()` ni consultas.
+
+| Resource | Permiso `view` | Navegación | URL/listado |
+|---|---|---|---|
+| `AlertaDocumentoResource` | `alerta-documento.view` | `shouldRegisterNavigation()` | `canViewAny()` |
+| `AlertaRendimientoResource` | `alerta-rendimiento.view` | `shouldRegisterNavigation()` | `canViewAny()` |
+| `AseguradoraResource` | `aseguradora.view` | `shouldRegisterNavigation()` | `canViewAny()` |
+| `CargaCombustibleResource` | `carga-combustible.view` | `shouldRegisterNavigation()` | `canViewAny()` |
+| `CentroCostoResource` | `centro-costo.view` | `shouldRegisterNavigation()` | `canViewAny()` |
+| `CuentaConcentradoraResource` | `cuenta-concentradora.view` | `shouldRegisterNavigation()` | `canViewAny()` |
+| `DepartamentoResource` | `departamento.view` | `shouldRegisterNavigation()` | `canViewAny()` |
+| `FondeoResource` | `fondeo.view` | `shouldRegisterNavigation()` | `canViewAny()` |
+| `LocalidadResource` | `localidad.view` | `shouldRegisterNavigation()` | `canViewAny()` |
+| `MarcaVehiculoResource` | `marca-vehiculo.view` | `shouldRegisterNavigation()` | `canViewAny()` |
+| `PolizaSeguroResource` | `poliza-seguro.view` | `shouldRegisterNavigation()` | `canViewAny()` |
+| `RoleResource` | `rol.view` | `shouldRegisterNavigation()` | `canViewAny()` |
+| `SolicitudCargaCombustibleResource` | `solicitud-carga-combustible.view` | `shouldRegisterNavigation()` | `canViewAny()` |
+| `TarjetaCombustibleResource` | `tarjeta-combustible.view` | `shouldRegisterNavigation()` | `canAccess()` y `canViewAny()` |
+| `TarjetaSaldoMovimientoResource` | `tarjeta-saldo-movimiento.view` | `shouldRegisterNavigation()` | `canViewAny()` |
+| `TipoDocumentoResource` | `tipo-documento.view` | `shouldRegisterNavigation()` | `canViewAny()` |
+| `TipoPagoResource` | `tipo-pago.view` | `shouldRegisterNavigation()` | `canViewAny()` |
+| `TipoVehiculoResource` | `tipo-vehiculo.view` | `shouldRegisterNavigation()` | `canViewAny()` |
+| `UserResource` | `usuario.view` | `shouldRegisterNavigation()` | `canViewAny()` |
+| `VehiculoChoferResource` | `vehiculo-chofer.view` | `shouldRegisterNavigation()` | `canViewAny()` |
+| `VehiculoCuentaAnaliticaResource` | `vehiculo-cuenta-analitica.view` | `shouldRegisterNavigation()` | `canViewAny()` |
+| `VehiculoDepartamentoResource` | `vehiculo-departamento.view` | `shouldRegisterNavigation()` | `canViewAny()` |
+| `VehiculoDocumentoResource` | `vehiculo-documento.view` | `shouldRegisterNavigation()` | `canViewAny()` |
+| `VehiculoEstatusResource` | `vehiculo-estatus.view` | `shouldRegisterNavigation()` | `canViewAny()` |
+| `VehiculoFondeoConfigResource` | `vehiculo-fondeo-config.view` | `shouldRegisterNavigation()` | `canViewAny()` |
+| `VehiculoLocalidadResource` | `vehiculo-localidad.view` | `shouldRegisterNavigation()` | `canViewAny()` |
+| `VehiculoResponsableResource` | `vehiculo-responsable.view` | `shouldRegisterNavigation()` | `canViewAny()` |
+| `VehiculoResource` | `vehiculo.view` | `shouldRegisterNavigation()` | `canViewAny()` |
+| `VehiculoTarjetaResource` | `vehiculo-tarjeta.view` | `shouldRegisterNavigation()` | `canViewAny()` |
+
+## ETAPA 4B — Acciones Filament migradas
+
+### Decisiones y cobertura
+
+- `canCreate()` y `canEdit()` de los recursos con correspondencia clara consultan `*.create` y `*.update` del catálogo.
+- El catálogo vigente no contiene permisos `*.delete`; las eliminaciones explícitas, individuales y masivas, conservan la regla histórica de `admin`. No se inventaron permisos ni se cambiaron asignaciones.
+- Las reglas de edición propia de cargas y alertas combinan permiso con la condición existente de pertenencia/asignación del registro.
+- Las exportaciones aprobadas de reportes validan el permiso también al ejecutar `exportar()`. Las acciones de fondeo operativo y financiero combinan permiso con sus condiciones de negocio.
+- `abrir_documento`, importar tarjetas y usar una cuenta analítica sugerida tienen guardas de visibilidad/ejecución con permisos existentes.
+- No se modificaron `FlotaScope`, `getEloquentQuery()`, consultas, filtros, relaciones ni reglas de alcance.
+
+### Matriz Resource/Page/acción
+
+| Componente | Acción | Permiso | Visibilidad/ejecución | Condición preservada |
+|---|---|---|---|---|
+| Recursos CRUD con catálogo | Crear/editar | `<recurso>.create` / `<recurso>.update` | `canCreate()` / `canEdit()` | alcance y relaciones |
+| Carga combustible | Editar propio | `carga-combustible.update-own-assignment` | permiso + condición de asignación | responsable del vehículo |
+| Alertas | Editar propio | `alerta-documento.update-own` / `alerta-rendimiento.update-own` | permiso + registro propio | `responsable_user_id` |
+| FondeoDashboard | Fondear | `fondeo.create` | `visible()` + `authorize()` | pendiente y configuración activa |
+| FondeoFinancieroDashboard | Fondear/retirar/transferir | `fondeo-financiero.*` correspondiente | `visible()` + `authorize()` | saldo y tarjeta |
+| ReporteCombustible/Copia | Exportar | `reporte-combustible.export` | guardia de ejecución | filtros del reporte |
+| ReporteDocumentos | Exportar | `reporte-documentos.export` | guardia de ejecución | filtros del reporte |
+| TarjetaCombustible | Importar | `tarjeta-combustible.create` | `visible()` + `authorize()` | validación del archivo |
+| VehiculoDocumento | Abrir documento | `vehiculo-documento.view` | `authorize()` | archivo asociado |
+| SolicitudCargaCombustible | Usar sugerida | `solicitud-carga-combustible.update` | `visible()` + `authorize()` | cuenta analítica activa |
+
+### Casos pendientes y riesgos
+
+- No hay permisos `*.delete`; se requiere una decisión posterior antes de reemplazar la regla histórica de `admin`.
+- `FondeoFinancieroDashboard::ajustar` no tiene permiso de operación aprobado.
+- `FondeoFinancieroDashboard::exportar_solicitud_recarga` no tiene correspondencia clara con los permisos de exportación de reportes.
+- `VehiculoResource::exportar` tampoco tiene permiso de exportación específico.
+- Los recursos con catálogo sólo `view` (`Departamento`, `VehiculoDepartamento`, `VehiculoCuentaAnalitica` y `VehiculoChofer`) no recibieron permisos nuevos.
+- `administracion` permanece sin permisos; la consulta de sus usuarios sigue pendiente por indisponibilidad de la base local.
+
+### Archivos modificados en ETAPA 4B
+
+Se actualizaron los Resources con controles CRUD o acciones correspondientes, las páginas `FondeoDashboard`, `FondeoFinancieroDashboard`, `ReporteCombustible`, `ReporteCombustibleCopia`, `ReporteDocumentos`, el listado de tarjetas y `tests/Feature/Stage4BAuthorizationTest.php`. Se conservaron todos los cambios previos y `flota_actual.zip`.
+
+### Pruebas realizadas
+
+- `git diff --check`: correcto.
+- `php -l` sobre los PHP modificados: correcto.
+- `php artisan test --filter='Stage4AAuthorizationTest|FlotaScopeVisibilityTest'`: 10 pruebas, 40 aserciones, correctas.
+- `Stage4BAuthorizationTest` cubre CRUD, eliminación masiva, exportaciones, acciones financieras y roles; junto con la regresión de ETAPA 4A y `FlotaScope`: 13 pruebas, 58 aserciones, correctas.
+
+La ETAPA 5 queda propuesta para estabilización posterior. No se inició.
+
+| Page | Permiso `view` | Navegación | URL directa/carga |
+|---|---|---|---|
+| `FondeoDashboard` | `pagina.fondeo-operativo.view` | `shouldRegisterNavigation()` | `canAccess()` |
+| `FondeoFinancieroDashboard` | `pagina.fondeo-financiero.view` | `shouldRegisterNavigation()` | `canAccess()` |
+| `MisVehiculos` | `pagina.mis-vehiculos.view` | `shouldRegisterNavigation()` | `canAccess()` |
+| `RegistrarCargaExtemporanea` | `pagina.carga-extemporanea.view` | `shouldRegisterNavigation()` | `canAccess()` y `abort_unless()` existente |
+| `ReporteCombustible` | `pagina.reporte-combustible.view` | `shouldRegisterNavigation()` | `canAccess()` |
+| `ReporteCombustibleCopia` | `pagina.reporte-combustible.view` | `shouldRegisterNavigation()` | `canAccess()` |
+| `ReporteDocumentos` | `pagina.reporte-documentos.view` | `shouldRegisterNavigation()` | `canAccess()` |
+
+### Comprobaciones rígidas reemplazadas
+
+- Se reemplazaron las comprobaciones de roles dentro de `canViewAny()` de los Resources migrados.
+- Se reemplazó la comprobación especial de roles de `TarjetaCombustibleResource::canAccess()`.
+- Se reemplazaron las comprobaciones de roles de `canAccess()` en las siete Pages personalizadas.
+- Se añadió `shouldRegisterNavigation()` donde no existía, siempre usando el mismo permiso de vista.
+
+### Comprobaciones por rol conservadas
+
+- Las comprobaciones de roles dentro de `getEloquentQuery()` y servicios de reportes se conservaron porque controlan el alcance de registros.
+- Las comprobaciones de `canCreate()`, `canEdit()`, `canDelete()` y las acciones `visible()` se conservaron para ETAPA 4B.
+- Las comprobaciones de rol relacionadas con propiedad/asignación de alertas, cargas y vehículos no se reemplazaron en esta etapa.
+- `RoleResource` conserva sus protecciones `rol.*`, `admin`, `administracion` y sincronización de permisos de la ETAPA 3.
+
 ## 5. Pruebas realizadas
 
 - Búsqueda estática con `rg` de todas las funciones y símbolos solicitados.
@@ -226,21 +338,22 @@ Este mapeo queda documentado para etapas posteriores y no se aplicó todavía en
 - `php artisan test tests/Feature/PermissionSeederTest.php`: **4 pruebas, 16 aserciones, PASS**.
 - `php artisan test tests/Feature/PermissionSeederTest.php tests/Feature/FlotaScopeVisibilityTest.php tests/Feature/CargaCombustibleCreatePageTest.php`: **11 pruebas, 28 aserciones, PASS**.
 - `php artisan test tests/Feature/RoleResourceTest.php tests/Feature/PermissionSeederTest.php`: **9 pruebas, 33 aserciones, PASS**.
+- `php artisan test tests/Feature/Stage4AAuthorizationTest.php tests/Feature/RoleResourceTest.php tests/Feature/PermissionSeederTest.php tests/Feature/FlotaScopeVisibilityTest.php`: **19 pruebas, 73 aserciones, PASS**.
 - Las pruebas de `RoleResource` cubren acceso autorizado, rechazo por URL directa, hidratación de permisos, actualización sin duplicados, ausencia de permisos directos a usuarios, protección de `admin` y permanencia de `administracion` con cero permisos.
+- Las pruebas de ETAPA 4A cubren navegación/acceso por permiso, rechazo por URL directa, accesos de `admin`, `activos`, `responsable`, `chofer`, `fondeo` y `administracion`, además de la regresión de `FlotaScope`.
 - Se verificó sintaxis PHP de `config/permissions.php`, `PermissionSeeder.php`, `RoleSeeder.php` y `PermissionSeederTest.php`.
 - Se comprobó idempotencia mediante dos ejecuciones del seeder dentro de la prueba, sin duplicar permisos, roles ni relaciones.
 - Se verificó la existencia de `fondeo`, los 134 permisos de `admin`, los 0 permisos de `administracion` y la ausencia de permisos administrativos en `responsable` y `chofer`.
 - La consulta segura de usuarios con `administracion` permanece pendiente: la base MySQL local no pudo conectar; no se ejecutó ningún seeder contra esa base.
 - No se ejecutaron migraciones, seeders ni cambios en producción. No se ejecutaron comandos destructivos.
 
-## 6. Trabajo pendiente para ETAPA 4
+## 6. Trabajo pendiente para ETAPA 4B
 
-- Migrar los recursos y páginas restantes para utilizar el catálogo, sin modificar `FlotaScope` ni los filtros.
-- Aplicar el mapeo de permisos al sidebar y a la navegación de los módulos restantes.
-- Revisar la discrepancia entre la lógica actual de `ReporteDocumentos::canAccess()` y el permiso inicial restringido de `chofer`.
-- Alinear `canAccess()`, `canViewAny()`, `canCreate()`, `canEdit()`, `canDelete()` y `visible()` en los módulos autorizados.
-- Revisar el acceso directo a rutas de recursos y páginas restantes.
-- Añadir pruebas de autorización por rol sin alterar el alcance de registros.
+- Migrar `canCreate()`, `canEdit()`, `canDelete()` y `canDeleteAny()` de forma gradual usando los permisos ya existentes.
+- Migrar acciones `visible()`, exportaciones y acciones personalizadas sin convertir permisos en alcance de datos.
+- Revisar la discrepancia funcional entre la lógica histórica y los permisos de `chofer` para reportes/documentos, ahora que la entrada ya está protegida.
+- Validar acceso directo a rutas de creación, edición y eliminación después de migrar acciones.
+- Añadir pruebas de acciones por rol y conservar las regresiones de `FlotaScope`.
 - Revisar notificaciones basadas en `User::role()` cuando se confirme el nuevo catálogo.
 - Consultar usuarios con `administracion` cuando la base local esté disponible; no se asignarán permisos nuevos sin una decisión posterior.
 
@@ -253,10 +366,10 @@ Este mapeo queda documentado para etapas posteriores y no se aplicó todavía en
 - `TarjetaCombustibleResource` usa `canAccess()` y no el patrón CRUD habitual, por lo que no debe traducirse mecánicamente.
 - Algunas reglas combinan rol y propiedad/asignación de registro. Sustituirlas sólo por permisos globales podría ampliar acceso indebidamente.
 - `FlotaScope` considera `fondeo` un rol con acceso global a vehículos activos; esa lógica no se modificó.
-- La lógica actual de `canAccess()` aún puede mostrar o permitir opciones a `chofer` que el catálogo ya no le asigna; la corrección de esas comprobaciones pertenece a ETAPA 4.
-- La interfaz de `RoleResource` ya respeta permisos, pero los demás módulos todavía conservan comprobaciones rígidas por rol hasta ETAPA 4.
+- Las acciones CRUD y `visible()` aún conservan comprobaciones rígidas por rol; su migración pertenece a ETAPA 4B.
+- El sidebar manual continúa usando filtros propios para módulos; la alineación general de la navegación queda fuera de 4A y debe revisarse en 4B si aplica.
 - Los usuarios con roles combinados (`chofer` + `responsable`) tienen comportamiento probado específicamente; la migración debe preservar la unión de sus asignaciones.
 
-## Estado al cierre de ETAPA 3
+## Estado al cierre de ETAPA 4A
 
-La ETAPA 3 queda completada. No se inició la ETAPA 4: no se migraron recursos o páginas restantes, no se cambió la navegación de otros módulos y no se modificó `FlotaScope` ni ningún filtro de alcance.
+La ETAPA 4A queda completada. No se inició la ETAPA 4B: no se migraron acciones CRUD, botones `visible()`, exportaciones ni acciones personalizadas; tampoco se modificó `FlotaScope` ni ningún filtro de alcance.

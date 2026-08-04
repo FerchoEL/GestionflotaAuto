@@ -25,12 +25,12 @@ class VehiculoCuentaAnaliticaResource extends Resource
 
     public static function canViewAny(): bool
     {
-        return auth()->user()->hasAnyRole(['admin', 'activos']);
+        return auth()->user()?->can('vehiculo-cuenta-analitica.view') ?? false;
     }
 
     public static function shouldRegisterNavigation(): bool
     {
-        return auth()->user()->hasAnyRole(['admin', 'activos']);
+        return auth()->user()?->can('vehiculo-cuenta-analitica.view') ?? false;
     }
 
     public static function form(Form $form): Form

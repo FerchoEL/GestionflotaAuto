@@ -42,12 +42,12 @@ class MisVehiculos extends Page
 
     public static function canAccess(): bool
     {
-        return auth()->user()?->hasAnyRole(['admin', 'responsable', 'chofer']) ?? false;
+        return auth()->user()?->can('pagina.mis-vehiculos.view') ?? false;
     }
 
     public static function shouldRegisterNavigation(): bool
     {
-        return auth()->user()?->hasAnyRole(['admin', 'responsable', 'chofer']) ?? false;
+        return static::canAccess();
     }
 
     public function vehiculosAsignados(): Collection

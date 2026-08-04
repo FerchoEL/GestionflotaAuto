@@ -105,6 +105,8 @@ class ReporteCombustible extends Page
 
     public function exportar()
     {
+        abort_unless(auth()->user()?->can('reporte-combustible.export') ?? false, 403);
+
         return Excel::download(
             new ReporteCombustibleExport([
                 'vehiculo'=>$this->vehiculo_id,
@@ -121,7 +123,12 @@ class ReporteCombustible extends Page
 
     public static function canAccess(): bool
     {
-        return auth()->user()?->hasAnyRole(['admin', 'responsable']) ?? false;
+        return auth()->user()?->can('pagina.reporte-combustible.view') ?? false;
+    }
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return static::canAccess();
     }
 
     private function filters(): array

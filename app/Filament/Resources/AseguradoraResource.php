@@ -24,6 +24,26 @@ class AseguradoraResource extends Resource
     protected static ?string $modelLabel = 'Aseguradora';
     protected static ?string $pluralModelLabel = 'Aseguradoras';
 
+    public static function canViewAny(): bool
+    {
+        return auth()->user()?->can('aseguradora.view') ?? false;
+    }
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return auth()->user()?->can('aseguradora.view') ?? false;
+    }
+
+    public static function canCreate(): bool
+    {
+        return auth()->user()?->can('aseguradora.create') ?? false;
+    }
+
+    public static function canEdit(\Illuminate\Database\Eloquent\Model $record): bool
+    {
+        return auth()->user()?->can('aseguradora.update') ?? false;
+    }
+
     public static function form(Form $form): Form
     {
         return $form->schema([

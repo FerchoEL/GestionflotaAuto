@@ -235,7 +235,9 @@ JS,
                 ->searchable()
                 ->preload()
                 ->nullable()
-                ->visible(fn () => auth()->user()->hasAnyRole(['admin','responsable']))
+                ->visible(fn () =>
+                    (auth()->user()?->can('carga-combustible.update') || auth()->user()?->can('carga-combustible.update-own-assignment'))
+                    && auth()->user()->hasAnyRole(['admin','responsable']))
                 ->helperText('Se sugiere automáticamente según el vehículo seleccionado.'),
 
             $mobileImageUpload('foto_odometro_path', 'Foto odómetro', 'cargas/odometro', fn (?Model $record): bool => blank($record), $esChoferEstricto)
@@ -342,31 +344,26 @@ JS,
     }
     public static function canViewAny(): bool
     {
-        return auth()->user()->hasAnyRole([
-            'admin',
-            'chofer',
-            'responsable',
-            'activos'
-        ]);
+        return auth()->user()?->can('carga-combustible.view') ?? false;
+    }
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return auth()->user()?->can('carga-combustible.view') ?? false;
     }
 
     public static function canCreate(): bool
     {
-        return auth()->user()->hasAnyRole([
-            'admin',
-            'chofer',
-            'responsable',
-            'activos'
-        ]);
+        return auth()->user()?->can('carga-combustible.create') ?? false;
     }
 
     public static function canEdit(Model $record): bool
     {
         $user = auth()->user();
 
-        if ($user->hasRole('admin')) return true;
+        if ($user->can('carga-combustible.update')) return true;
 
-        if ($user->hasRole('responsable')) {
+        if ($user->can('carga-combustible.update-own-assignment') && $user->hasRole('responsable')) {
             return $record->vehiculo->responsableActivo?->responsable_user_id === $user->id;
         }
 
@@ -376,7 +373,12 @@ JS,
 
     public static function canDelete(Model $record): bool
     {
-        return auth()->user()->hasRole('admin');
+        return auth()->user()?->hasRole('admin') ?? false;
+    }
+
+    public static function canDeleteAny(): bool
+    {
+        return auth()->user()?->hasRole('admin') ?? false;
     }
 
     public static function getEloquentQuery(): Builder

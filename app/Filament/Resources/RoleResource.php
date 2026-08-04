@@ -85,6 +85,11 @@ class RoleResource extends Resource
         return (bool) auth()->user()?->can('rol.view');
     }
 
+    public static function shouldRegisterNavigation(): bool
+    {
+        return static::canViewAny();
+    }
+
     public static function canCreate(): bool
     {
         return static::canViewAny()

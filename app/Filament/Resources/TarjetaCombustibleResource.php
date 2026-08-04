@@ -55,11 +55,39 @@ class TarjetaCombustibleResource extends Resource
     }
     public static function canAccess(): bool
     {
-        return auth()->user()->hasAnyRole([
-            'admin',
-            'fondeo'
-        ]);
+        return auth()->user()?->can('tarjeta-combustible.view') ?? false;
     }
+
+    public static function canViewAny(): bool
+    {
+        return static::canAccess();
+    }
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return static::canAccess();
+    }
+
+    public static function canCreate(): bool
+    {
+        return auth()->user()?->can('tarjeta-combustible.create') ?? false;
+    }
+
+    public static function canEdit(\Illuminate\Database\Eloquent\Model $record): bool
+    {
+        return auth()->user()?->can('tarjeta-combustible.update') ?? false;
+    }
+
+    public static function canDelete(\Illuminate\Database\Eloquent\Model $record): bool
+    {
+        return auth()->user()?->can('tarjeta-combustible.delete') ?? false;
+    }
+
+    public static function canDeleteAny(): bool
+    {
+        return auth()->user()?->can('tarjeta-combustible.delete') ?? false;
+    }
+
     public static function table(Table $table): Table
     {
         return $table

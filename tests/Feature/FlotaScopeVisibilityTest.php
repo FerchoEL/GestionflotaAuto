@@ -199,6 +199,8 @@ class FlotaScopeVisibilityTest extends TestCase
 
     private function crearRolesBase(): void
     {
+        $this->seed(\Database\Seeders\PermissionSeeder::class);
+
         foreach (['admin', 'responsable', 'activos', 'chofer', 'fondeo'] as $rol) {
             Role::firstOrCreate([
                 'name' => $rol,

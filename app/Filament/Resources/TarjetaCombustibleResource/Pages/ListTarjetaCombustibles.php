@@ -24,6 +24,8 @@ class ListTarjetaCombustibles extends ListRecords
                 ->color('success')
                 ->modalHeading('Importar hoja BD de One Card')
                 ->modalSubmitActionLabel('Importar tarjetas')
+                ->visible(fn (): bool => auth()->user()?->can('tarjeta-combustible.create') ?? false)
+                ->authorize(fn () => auth()->user()?->can('tarjeta-combustible.create') ?? false)
                 ->form([
                     FileUpload::make('archivo')
                         ->label('Archivo Excel')

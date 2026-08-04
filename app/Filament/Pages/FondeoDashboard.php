@@ -153,9 +153,11 @@ class FondeoDashboard extends Page implements HasTable
             Tables\Actions\Action::make('fondear')
                 ->label('Fondear')
                 ->visible(fn ($record) =>
-                    $this->calcularPendiente($record) > 0
+                    (auth()->user()?->can('fondeo.create') ?? false)
+                    && $this->calcularPendiente($record) > 0
                     && $this->tieneConfigActiva($record)
                 )
+                ->authorize(fn () => auth()->user()?->can('fondeo.create') ?? false)
                     ->form([
                         TextInput::make('importe_fondeado')
                             ->label('Monto real a fondear')
@@ -376,9 +378,11 @@ class FondeoDashboard extends Page implements HasTable
 
     public static function canAccess(): bool
     {
-        return auth()->user()->hasAnyRole([
-            'admin',
-            'fondeo'
-        ]);
+        return auth()->user()?->can('pagina.fondeo-operativo.view') ?? false;
+    }
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return static::canAccess();
     }
 }

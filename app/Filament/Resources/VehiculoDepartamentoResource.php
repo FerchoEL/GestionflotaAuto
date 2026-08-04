@@ -99,6 +99,11 @@ class VehiculoDepartamentoResource extends Resource
 
     public static function canViewAny(): bool
     {
-        return auth()->user()->hasAnyRole(['admin','activos']);
+        return auth()->user()?->can('vehiculo-departamento.view') ?? false;
+    }
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return auth()->user()?->can('vehiculo-departamento.view') ?? false;
     }
 }

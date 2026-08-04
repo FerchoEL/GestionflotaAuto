@@ -147,11 +147,12 @@ class AlertaRendimientoResource extends Resource
 
     public static function canViewAny(): bool
     {
-        return auth()->user()->hasAnyRole([
-            'admin',
-            'responsable',
-            'activos'
-        ]);
+        return auth()->user()?->can('alerta-rendimiento.view') ?? false;
+    }
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return auth()->user()?->can('alerta-rendimiento.view') ?? false;
     }
 
     public static function canCreate(): bool
@@ -163,9 +164,9 @@ class AlertaRendimientoResource extends Resource
     {
         $user = auth()->user();
 
-        if ($user->hasRole('admin')) return true;
+        if ($user->can('alerta-rendimiento.update')) return true;
 
-        if ($user->hasRole('responsable')) {
+        if ($user->can('alerta-rendimiento.update-own') && $user->hasRole('responsable')) {
             return $record->responsable_user_id === $user->id;
         }
 
@@ -174,7 +175,12 @@ class AlertaRendimientoResource extends Resource
 
     public static function canDelete(Model $record): bool
     {
-        return auth()->user()->hasRole('admin');
+        return auth()->user()?->hasRole('admin') ?? false;
+    }
+
+    public static function canDeleteAny(): bool
+    {
+        return auth()->user()?->hasRole('admin') ?? false;
     }
 
     public static function getEloquentQuery(): Builder

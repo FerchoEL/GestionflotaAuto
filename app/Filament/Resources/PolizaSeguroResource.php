@@ -25,6 +25,26 @@ class PolizaSeguroResource extends Resource
     protected static ?string $modelLabel = 'Póliza de seguro';
     protected static ?string $pluralModelLabel = 'Pólizas de seguro';
 
+    public static function canViewAny(): bool
+    {
+        return auth()->user()?->can('poliza-seguro.view') ?? false;
+    }
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return auth()->user()?->can('poliza-seguro.view') ?? false;
+    }
+
+    public static function canCreate(): bool
+    {
+        return auth()->user()?->can('poliza-seguro.create') ?? false;
+    }
+
+    public static function canEdit(\Illuminate\Database\Eloquent\Model $record): bool
+    {
+        return auth()->user()?->can('poliza-seguro.update') ?? false;
+    }
+
     public static function form(Form $form): Form
     {
         return $form->schema([

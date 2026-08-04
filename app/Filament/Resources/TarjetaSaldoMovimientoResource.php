@@ -161,11 +161,12 @@ class TarjetaSaldoMovimientoResource extends Resource
 
     public static function canViewAny(): bool
     {
-        return auth()->user()->hasAnyRole([
-            'admin',
-            'fondeo',
-            'activos',
-        ]);
+        return auth()->user()?->can('tarjeta-saldo-movimiento.view') ?? false;
+    }
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return auth()->user()?->can('tarjeta-saldo-movimiento.view') ?? false;
     }
 
     public static function canCreate(): bool

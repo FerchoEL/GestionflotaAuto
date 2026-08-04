@@ -160,28 +160,32 @@ class VehiculoResource extends Resource
 
     public static function canViewAny(): bool
     {
-        return auth()->user()->hasAnyRole([
-            'admin',
-            'activos',
-            'chofer',
-            'responsable',
-            'fondeo'
-        ]);
+        return auth()->user()?->can('vehiculo.view') ?? false;
+    }
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return auth()->user()?->can('vehiculo.view') ?? false;
     }
 
     public static function canCreate(): bool
     {
-        return auth()->user()->hasAnyRole(['admin', 'activos']);
+        return auth()->user()?->can('vehiculo.create') ?? false;
     }
 
     public static function canEdit(\Illuminate\Database\Eloquent\Model $record): bool
     {
-        return auth()->user()->hasAnyRole(['admin', 'activos']);
+        return auth()->user()?->can('vehiculo.update') ?? false;
     }
 
     public static function canDelete(\Illuminate\Database\Eloquent\Model $record): bool
     {
-        return auth()->user()->hasRole('admin');
+        return auth()->user()?->hasRole('admin') ?? false;
+    }
+
+    public static function canDeleteAny(): bool
+    {
+        return auth()->user()?->hasRole('admin') ?? false;
     }
 
     public static function getEloquentQuery(): Builder

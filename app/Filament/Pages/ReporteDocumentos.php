@@ -40,6 +40,8 @@ class ReporteDocumentos extends Page
 
     public function exportar()
     {
+        abort_unless(auth()->user()?->can('reporte-documentos.export') ?? false, 403);
+
         return Excel::download(
             new ReporteDocumentosExport($this->filters()),
             'reporte_documentos.xlsx'
@@ -48,7 +50,12 @@ class ReporteDocumentos extends Page
 
     public static function canAccess(): bool
     {
-        return auth()->user()->hasAnyRole(['admin', 'activos', 'responsable', 'chofer']);
+        return auth()->user()?->can('pagina.reporte-documentos.view') ?? false;
+    }
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return static::canAccess();
     }
 
     private function filters(): array

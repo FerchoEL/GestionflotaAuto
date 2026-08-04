@@ -65,22 +65,32 @@ class MarcaVehiculoResource extends Resource
 
     public static function canViewAny(): bool
     {
-        return auth()->user()->hasAnyRole(['admin', 'activos']);
+        return auth()->user()?->can('marca-vehiculo.view') ?? false;
+    }
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return auth()->user()?->can('marca-vehiculo.view') ?? false;
     }
 
     public static function canCreate(): bool
     {
-        return auth()->user()->hasAnyRole(['admin', 'activos']);
+        return auth()->user()?->can('marca-vehiculo.create') ?? false;
     }
 
     public static function canEdit(Model $record): bool
     {
-        return auth()->user()->hasAnyRole(['admin', 'activos']);
+        return auth()->user()?->can('marca-vehiculo.update') ?? false;
     }
 
     public static function canDelete(Model $record): bool
     {
-        return auth()->user()->hasRole('admin');
+        return auth()->user()?->hasRole('admin') ?? false;
+    }
+
+    public static function canDeleteAny(): bool
+    {
+        return auth()->user()?->hasRole('admin') ?? false;
     }
 
     public static function getPages(): array

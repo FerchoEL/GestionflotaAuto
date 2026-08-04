@@ -58,22 +58,32 @@ class CuentaConcentradoraResource extends Resource
 
     public static function canViewAny(): bool
     {
-        return auth()->user()->hasAnyRole(['admin', 'activos', 'fondeo']);
+        return auth()->user()?->can('cuenta-concentradora.view') ?? false;
+    }
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return auth()->user()?->can('cuenta-concentradora.view') ?? false;
     }
 
     public static function canCreate(): bool
     {
-        return auth()->user()->hasAnyRole(['admin', 'activos']);
+        return auth()->user()?->can('cuenta-concentradora.create') ?? false;
     }
 
     public static function canEdit(\Illuminate\Database\Eloquent\Model $record): bool
     {
-        return auth()->user()->hasAnyRole(['admin', 'activos']);
+        return auth()->user()?->can('cuenta-concentradora.update') ?? false;
     }
 
     public static function canDelete(\Illuminate\Database\Eloquent\Model $record): bool
     {
-        return auth()->user()->hasRole('admin');
+        return auth()->user()?->hasRole('admin') ?? false;
+    }
+
+    public static function canDeleteAny(): bool
+    {
+        return auth()->user()?->hasRole('admin') ?? false;
     }
 
     public static function getPages(): array

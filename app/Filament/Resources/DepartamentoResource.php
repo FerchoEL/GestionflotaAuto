@@ -59,7 +59,12 @@ class DepartamentoResource extends Resource
     }
     public static function canViewAny(): bool
     {
-        return auth()->user()->hasAnyRole(['admin', 'activos']);
+        return auth()->user()?->can('departamento.view') ?? false;
+    }
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return auth()->user()?->can('departamento.view') ?? false;
     }
     public static function getPages(): array
     {

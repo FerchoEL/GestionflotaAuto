@@ -107,7 +107,12 @@ class AlertaDocumentoResource extends Resource
 
     public static function canViewAny(): bool
     {
-        return auth()->user()->hasAnyRole(['admin', 'activos', 'responsable']);
+        return auth()->user()?->can('alerta-documento.view') ?? false;
+    }
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return auth()->user()?->can('alerta-documento.view') ?? false;
     }
 
     public static function canCreate(): bool
@@ -119,16 +124,23 @@ class AlertaDocumentoResource extends Resource
     {
         $user = auth()->user();
 
-        if ($user->hasRole('admin') || $user->hasRole('activos')) {
+        if ($user->can('alerta-documento.update')) {
             return true;
         }
 
-        return $user->hasRole('responsable') && $record->responsable_user_id === $user->id;
+        return $user->can('alerta-documento.update-own')
+            && $user->hasRole('responsable')
+            && $record->responsable_user_id === $user->id;
     }
 
     public static function canDelete(Model $record): bool
     {
-        return auth()->user()->hasRole('admin');
+        return auth()->user()?->hasRole('admin') ?? false;
+    }
+
+    public static function canDeleteAny(): bool
+    {
+        return auth()->user()?->hasRole('admin') ?? false;
     }
 
     public static function getEloquentQuery(): Builder

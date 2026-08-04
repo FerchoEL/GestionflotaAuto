@@ -21,6 +21,26 @@ class TipoPagoResource extends Resource
     protected static ?string $modelLabel = 'Tipo de pago';
     protected static ?string $pluralModelLabel = 'Tipos de pago';
 
+    public static function canViewAny(): bool
+    {
+        return auth()->user()?->can('tipo-pago.view') ?? false;
+    }
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return auth()->user()?->can('tipo-pago.view') ?? false;
+    }
+
+    public static function canCreate(): bool
+    {
+        return auth()->user()?->can('tipo-pago.create') ?? false;
+    }
+
+    public static function canEdit(\Illuminate\Database\Eloquent\Model $record): bool
+    {
+        return auth()->user()?->can('tipo-pago.update') ?? false;
+    }
+
     public static function form(Form $form): Form
     {
         return $form->schema([

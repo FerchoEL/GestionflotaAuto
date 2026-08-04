@@ -27,12 +27,12 @@ class SolicitudCargaCombustibleResource extends Resource
 
     public static function canViewAny(): bool
     {
-        return auth()->user()->hasAnyRole(['admin', 'responsable', 'activos']);
+        return auth()->user()?->can('solicitud-carga-combustible.view') ?? false;
     }
 
     public static function shouldRegisterNavigation(): bool
     {
-        return auth()->user()->hasAnyRole(['admin', 'responsable', 'activos']);
+        return auth()->user()?->can('solicitud-carga-combustible.view') ?? false;
     }
 
     public static function canCreate(): bool
@@ -40,7 +40,17 @@ class SolicitudCargaCombustibleResource extends Resource
         return false;
     }
 
+    public static function canEdit(\Illuminate\Database\Eloquent\Model $record): bool
+    {
+        return auth()->user()?->can('solicitud-carga-combustible.update') ?? false;
+    }
+
     public static function canDelete($record): bool
+    {
+        return false;
+    }
+
+    public static function canDeleteAny(): bool
     {
         return false;
     }
@@ -170,7 +180,10 @@ class SolicitudCargaCombustibleResource extends Resource
                 Tables\Actions\Action::make('usarSugerida')
                     ->label('Usar sugerida')
                     ->icon('heroicon-o-light-bulb')
-                    ->visible(fn ($record) => filled($record?->vehiculo?->cuentaAnaliticaActiva?->cuenta_analitica_id))
+                    ->visible(fn ($record) =>
+                        (auth()->user()?->can('solicitud-carga-combustible.update') ?? false)
+                        && filled($record?->vehiculo?->cuentaAnaliticaActiva?->cuenta_analitica_id))
+                    ->authorize(fn () => auth()->user()?->can('solicitud-carga-combustible.update') ?? false)
                     ->action(function ($record) {
                         $sugerida = $record?->vehiculo?->cuentaAnaliticaActiva?->cuenta_analitica_id;
 

@@ -86,33 +86,26 @@ class VehiculoFondeoConfigResource extends Resource
     }
     public static function canViewAny(): bool
     {
-        return auth()->user()->hasAnyRole([
-            'admin',
-            'activos',
-            'fondeo'
-        ]);
+        return auth()->user()?->can('vehiculo-fondeo-config.view') ?? false;
+    }
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return auth()->user()?->can('vehiculo-fondeo-config.view') ?? false;
     }
 
     public static function canCreate(): bool
     {
-        return auth()->user()->hasAnyRole([
-            'admin',
-            'activos',
-            'fondeo'
-        ]);
+        return auth()->user()?->can('vehiculo-fondeo-config.create') ?? false;
     }
 
     public static function canEdit(Model $record): bool
     {
-        return auth()->user()->hasAnyRole([
-            'admin',
-            'activos',
-            'fondeo'
-        ]);
+        return auth()->user()?->can('vehiculo-fondeo-config.update') ?? false;
     }
 
     public static function canDelete(Model $record): bool
     {
-        return auth()->user()->hasRole('admin');
+        return auth()->user()?->hasRole('admin') ?? false;
     }
 }

@@ -51,7 +51,7 @@ class RegistrarCargaExtemporanea extends Page implements HasForms
 
     public static function canAccess(): bool
     {
-        return auth()->user()?->hasAnyRole(['admin', 'responsable']) ?? false;
+        return auth()->user()?->can('pagina.carga-extemporanea.view') ?? false;
     }
 
     public static function shouldRegisterNavigation(): bool
