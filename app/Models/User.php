@@ -76,6 +76,46 @@ class User extends Authenticatable
         return $this->hasMany(VehiculoResponsable::class, 'responsable_user_id');
     }
 
+    public function responsableAuxiliares()
+    {
+        return $this->hasMany(ResponsableAuxiliar::class, 'responsable_user_id');
+    }
+
+    public function auxiliares()
+    {
+        return $this->belongsToMany(
+            self::class,
+            'responsable_auxiliares',
+            'responsable_user_id',
+            'auxiliar_user_id'
+        )->withPivot(['activo', 'asignado_por_user_id'])->withTimestamps();
+    }
+
+    public function auxiliaresActivos()
+    {
+        return $this->auxiliares()->wherePivot('activo', true);
+    }
+
+    public function relacionesComoAuxiliar()
+    {
+        return $this->hasMany(ResponsableAuxiliar::class, 'auxiliar_user_id');
+    }
+
+    public function responsablesApoyados()
+    {
+        return $this->belongsToMany(
+            self::class,
+            'responsable_auxiliares',
+            'auxiliar_user_id',
+            'responsable_user_id'
+        )->withPivot(['activo', 'asignado_por_user_id'])->withTimestamps();
+    }
+
+    public function responsablesApoyadosActivos()
+    {
+        return $this->responsablesApoyados()->wherePivot('activo', true);
+    }
+
     public function cargas()
     {
         return $this->hasMany(CargaCombustible::class, 'chofer_user_id');
