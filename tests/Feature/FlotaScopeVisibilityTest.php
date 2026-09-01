@@ -8,6 +8,8 @@ use App\Filament\Pages\RegistrarCargaExtemporanea;
 use App\Models\User;
 use App\Models\Vehiculo;
 use App\Models\VehiculoChofer;
+use App\Models\ResponsableAuxiliar;
+use App\Models\VehiculoResponsable;
 use App\Services\VehiculoAsignacionActivaService;
 use App\Services\ReporteCombustibleService;
 use App\Support\FlotaScope;
@@ -195,6 +197,150 @@ class FlotaScopeVisibilityTest extends TestCase
         $opciones = app(RegistrarCargaExtemporanea::class)->vehiculosDisponibles();
 
         $this->assertArrayHasKey($vehiculo->id, $opciones);
+    }
+
+    public function test_auxiliar_activo_ve_los_vehiculos_del_responsable_apoyado(): void
+    {
+        $this->crearRolesBase();
+
+        $responsable = User::factory()->create();
+        $auxiliar = User::factory()->create();
+        $vehiculo = $this->crearVehiculo('AUX-001', '201', 'VIN-AUX-001');
+
+        $this->asignarResponsable($vehiculo, $responsable);
+        $this->asignarAuxiliar($responsable, $auxiliar);
+        $this->actingAs($auxiliar);
+
+        $this->assertSame([$vehiculo->id], FlotaScope::idsVehiculosUsuario()->all());
+    }
+
+    public function test_dos_auxiliares_heredan_el_alcance_del_mismo_responsable(): void
+    {
+        $this->crearRolesBase();
+
+        $responsable = User::factory()->create();
+        $auxiliarA = User::factory()->create();
+        $auxiliarB = User::factory()->create();
+        $vehiculo = $this->crearVehiculo('AUX-008', '208', 'VIN-AUX-008');
+
+        $this->asignarResponsable($vehiculo, $responsable);
+        $this->asignarAuxiliar($responsable, $auxiliarA);
+        $this->asignarAuxiliar($responsable, $auxiliarB);
+
+        foreach ([$auxiliarA, $auxiliarB] as $auxiliar) {
+            $this->actingAs($auxiliar);
+            $this->assertSame([$vehiculo->id], FlotaScope::idsVehiculosUsuario()->all());
+        }
+    }
+
+    public function test_el_alcance_del_auxiliar_se_actualiza_al_asignar_o_terminar_un_responsable(): void
+    {
+        $this->crearRolesBase();
+
+        $responsable = User::factory()->create();
+        $auxiliar = User::factory()->create();
+        $vehiculoInicial = $this->crearVehiculo('AUX-009', '209', 'VIN-AUX-009');
+        $vehiculoNuevo = $this->crearVehiculo('AUX-010', '210', 'VIN-AUX-010');
+
+        $this->asignarResponsable($vehiculoInicial, $responsable);
+        $this->asignarAuxiliar($responsable, $auxiliar);
+        $this->actingAs($auxiliar);
+
+        $this->assertContains($vehiculoInicial->id, FlotaScope::idsVehiculosUsuario()->all());
+
+        $this->asignarResponsable($vehiculoNuevo, $responsable);
+        $this->assertContains($vehiculoNuevo->id, FlotaScope::idsVehiculosUsuario()->all());
+
+        /** @var VehiculoResponsable $asignacion */
+        $asignacion = $vehiculoInicial->responsableActivo;
+        $asignacion->update([
+            'activo' => false,
+            'fecha_fin' => now()->toDateString(),
+        ]);
+
+        $this->assertNotContains($vehiculoInicial->id, FlotaScope::idsVehiculosUsuario()->all());
+        $this->assertContains($vehiculoNuevo->id, FlotaScope::idsVehiculosUsuario()->all());
+    }
+
+    public function test_auxiliar_obtiene_la_union_de_dos_responsables_y_no_ve_unidades_ajenas(): void
+    {
+        $this->crearRolesBase();
+
+        $responsableA = User::factory()->create();
+        $responsableB = User::factory()->create();
+        $responsableAjeno = User::factory()->create();
+        $auxiliar = User::factory()->create();
+        $vehiculoA = $this->crearVehiculo('AUX-002', '202', 'VIN-AUX-002');
+        $vehiculoB = $this->crearVehiculo('AUX-003', '203', 'VIN-AUX-003');
+        $vehiculoAjeno = $this->crearVehiculo('AUX-004', '204', 'VIN-AUX-004');
+
+        $this->asignarResponsable($vehiculoA, $responsableA);
+        $this->asignarResponsable($vehiculoB, $responsableB);
+        $this->asignarResponsable($vehiculoAjeno, $responsableAjeno);
+        $this->asignarAuxiliar($responsableA, $auxiliar);
+        $this->asignarAuxiliar($responsableB, $auxiliar);
+        $this->actingAs($auxiliar);
+
+        $this->assertEqualsCanonicalizing(
+            [$vehiculoA->id, $vehiculoB->id],
+            FlotaScope::idsVehiculosUsuario()->all()
+        );
+    }
+
+    public function test_relacion_inactiva_no_otorga_acceso_y_el_acceso_por_otra_via_se_conserva(): void
+    {
+        $this->crearRolesBase();
+
+        $responsable = User::factory()->create();
+        $auxiliar = User::factory()->create();
+        $auxiliar->assignRole('chofer');
+        $vehiculoHeredado = $this->crearVehiculo('AUX-005', '205', 'VIN-AUX-005');
+        $vehiculoComoChofer = $this->crearVehiculo('AUX-006', '206', 'VIN-AUX-006');
+
+        $this->asignarResponsable($vehiculoHeredado, $responsable);
+        $this->asignarAuxiliar($responsable, $auxiliar, false);
+        VehiculoChofer::create([
+            'vehiculo_id' => $vehiculoComoChofer->id,
+            'chofer_user_id' => $auxiliar->id,
+            'fecha_inicio' => now()->toDateString(),
+            'activo' => true,
+        ]);
+        $this->actingAs($auxiliar);
+
+        $this->assertSame([$vehiculoComoChofer->id], FlotaScope::idsVehiculosUsuario()->all());
+    }
+
+    public function test_mis_vehiculos_rechaza_un_id_fuera_del_alcance(): void
+    {
+        $this->crearRolesBase();
+
+        $auxiliar = User::factory()->create();
+        $vehiculo = $this->crearVehiculo('AUX-007', '207', 'VIN-AUX-007');
+        $this->actingAs($auxiliar);
+
+        $pagina = app(MisVehiculos::class);
+        $pagina->vehiculoId = $vehiculo->id;
+
+        $this->assertNull($pagina->vehiculoSeleccionado());
+    }
+
+    private function asignarResponsable(Vehiculo $vehiculo, User $responsable): void
+    {
+        app(VehiculoAsignacionActivaService::class)->guardarResponsable([
+            'vehiculo_id' => $vehiculo->id,
+            'responsable_user_id' => $responsable->id,
+            'fecha_inicio' => now()->toDateString(),
+            'activo' => true,
+        ]);
+    }
+
+    private function asignarAuxiliar(User $responsable, User $auxiliar, bool $activo = true): void
+    {
+        ResponsableAuxiliar::create([
+            'responsable_user_id' => $responsable->id,
+            'auxiliar_user_id' => $auxiliar->id,
+            'activo' => $activo,
+        ]);
     }
 
     private function crearRolesBase(): void

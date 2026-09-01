@@ -65,7 +65,7 @@ class MisVehiculos extends Page
             return null;
         }
 
-        return Vehiculo::query()
+        return FlotaScope::vehiculosUsuario()
             ->with([
                 'tipoVehiculo',
                 'estatus',
@@ -75,7 +75,8 @@ class MisVehiculos extends Page
                 'choferActivo.chofer',
                 'documentos.tipoDocumento',
             ])
-            ->find($this->vehiculoId);
+            ->whereKey($this->vehiculoId)
+            ->first();
     }
 
     public function historialRendimiento(): LengthAwarePaginator

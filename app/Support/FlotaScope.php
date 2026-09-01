@@ -4,6 +4,7 @@ namespace App\Support;
 
 use App\Models\Vehiculo;
 use App\Models\User;
+use App\Models\ResponsableAuxiliar;
 use Illuminate\Database\Eloquent\Builder;
 
 class FlotaScope
@@ -24,18 +25,26 @@ class FlotaScope
         $query = Vehiculo::query();
 
         $query->where(function (Builder $subQuery) use ($user): void {
-            if (! $user->hasAnyRole(['chofer', 'responsable'])) {
+            if ($user->hasAnyRole(['chofer', 'responsable'])) {
+                // Ambos perfiles pueden tener asignaciones como chofer y responsable.
+                $subQuery->whereHas('choferes', function (Builder $q) use ($user): void {
+                    $q->where('chofer_user_id', $user->id)
+                        ->where('activo', true);
+                })->orWhereHas('responsableActivo', function (Builder $q) use ($user): void {
+                    $q->where('responsable_user_id', $user->id);
+                });
+            } else {
                 $subQuery->whereRaw('1=0');
-
-                return;
             }
 
-            // Ambos perfiles pueden tener asignaciones como chofer y responsable.
-            $subQuery->whereHas('choferes', function (Builder $q) use ($user): void {
-                $q->where('chofer_user_id', $user->id)
-                    ->where('activo', true);
-            })->orWhereHas('responsableActivo', function (Builder $q) use ($user): void {
-                $q->where('responsable_user_id', $user->id);
+            $subQuery->orWhereHas('responsableActivo', function (Builder $q) use ($user): void {
+                $q->whereIn(
+                    'responsable_user_id',
+                    ResponsableAuxiliar::query()
+                        ->where('auxiliar_user_id', $user->id)
+                        ->where('activo', true)
+                        ->select('responsable_user_id')
+                );
             });
         });
 
