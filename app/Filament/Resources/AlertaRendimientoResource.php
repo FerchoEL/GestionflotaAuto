@@ -13,6 +13,7 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Illuminate\Database\Eloquent\Model; 
+use App\Support\FlotaScope;
 
 class AlertaRendimientoResource extends Resource
 {
@@ -166,8 +167,10 @@ class AlertaRendimientoResource extends Resource
 
         if ($user->can('alerta-rendimiento.update')) return true;
 
-        if ($user->can('alerta-rendimiento.update-own') && $user->hasRole('responsable')) {
-            return $record->responsable_user_id === $user->id;
+        if ($user->can('alerta-rendimiento.update-own')
+            && $user->hasAnyRole(['responsable', 'auxiliar_responsable'])) {
+            return $record->responsable_user_id === $user->id
+                || FlotaScope::vehiculosUsuario()->whereKey($record->vehiculo_id)->exists();
         }
 
         return false;
@@ -190,6 +193,10 @@ class AlertaRendimientoResource extends Resource
 
         if ($user->hasRole('admin') || $user->hasRole('activos')) {
             return $query;
+        }
+
+        if ($user->hasRole('auxiliar_responsable')) {
+            return $query->whereIn('vehiculo_id', FlotaScope::idsVehiculosUsuario());
         }
 
         if ($user->hasRole('responsable')) {

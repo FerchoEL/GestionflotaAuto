@@ -178,6 +178,28 @@ return [
             'reporte-documentos.export',
         ],
 
+        'auxiliar_responsable' => [
+            'modulo.combustible.view',
+            'modulo.documentacion.view',
+            'pagina.mis-vehiculos.view',
+            'pagina.carga-extemporanea.view',
+            'pagina.reporte-combustible.view',
+            'pagina.reporte-documentos.view',
+            'carga-combustible.view',
+            'carga-combustible.create',
+            'carga-combustible.update-own-assignment',
+            'vehiculo-documento.view',
+            'vehiculo-documento.create',
+            'vehiculo-documento.update',
+            'alerta-documento.view',
+            'alerta-documento.update-own',
+            'alerta-rendimiento.view',
+            'alerta-rendimiento.update-own',
+            'solicitud-carga-combustible.view',
+            'reporte-combustible.export',
+            'reporte-documentos.export',
+        ],
+
         'chofer' => [
             'modulo.combustible.view',
             'pagina.mis-vehiculos.view',

@@ -31,7 +31,7 @@ return new class extends Migration
                 ->on('users')
                 ->nullOnDelete();
 
-            $table->unique(['responsable_user_id', 'auxiliar_user_id']);
+            $table->unique(['responsable_user_id', 'auxiliar_user_id'], 'resp_aux_unique');
         });
     }
 

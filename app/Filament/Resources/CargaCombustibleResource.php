@@ -34,7 +34,7 @@ class CargaCombustibleResource extends Resource
         $user = Auth::user();
 
         return $user?->hasRole('chofer')
-            && ! $user?->hasAnyRole(['admin', 'responsable', 'activos']);
+            && ! $user?->hasAnyRole(['admin', 'responsable', 'auxiliar_responsable', 'activos']);
     }
 
     public static function form(Form $form): Form
@@ -213,7 +213,7 @@ class CargaCombustibleResource extends Resource
                 ->nullable()
                 ->visible(fn () =>
                     (auth()->user()?->can('carga-combustible.update') || auth()->user()?->can('carga-combustible.update-own-assignment'))
-                    && auth()->user()->hasAnyRole(['admin','responsable']))
+                    && auth()->user()->hasAnyRole(['admin', 'responsable', 'auxiliar_responsable']))
                 ->helperText('Se sugiere automáticamente según el vehículo seleccionado.'),
 
             $mobileImageUpload('foto_odometro_path', 'Foto odómetro', 'cargas/odometro', fn (?Model $record): bool => blank($record))
@@ -339,8 +339,10 @@ class CargaCombustibleResource extends Resource
 
         if ($user->can('carga-combustible.update')) return true;
 
-        if ($user->can('carga-combustible.update-own-assignment') && $user->hasRole('responsable')) {
-            return $record->vehiculo->responsableActivo?->responsable_user_id === $user->id;
+        if ($user->can('carga-combustible.update-own-assignment')
+            && $user->hasAnyRole(['responsable', 'auxiliar_responsable'])) {
+            return $record->vehiculo->responsableActivo?->responsable_user_id === $user->id
+                || FlotaScope::vehiculosUsuario()->whereKey($record->vehiculo_id)->exists();
         }
 
         return false;

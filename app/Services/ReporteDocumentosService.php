@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\VehiculoDocumento;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
+use App\Support\FlotaScope;
 
 class ReporteDocumentosService
 {
@@ -105,6 +106,12 @@ class ReporteDocumentosService
         }
 
         if ($user->hasAnyRole(['admin', 'activos'])) {
+            return;
+        }
+
+        if ($user->hasRole('auxiliar_responsable')) {
+            $query->whereIn('vehiculo_id', FlotaScope::idsVehiculosUsuario());
+
             return;
         }
 

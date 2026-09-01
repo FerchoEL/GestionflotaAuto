@@ -19,6 +19,7 @@ class RoleSeeder extends Seeder
             'administracion',
             'fondeo',
             'responsable',
+            'auxiliar_responsable',
             'chofer',
         ];
 

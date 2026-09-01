@@ -11,6 +11,7 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use App\Support\FlotaScope;
 
 class AlertaDocumentoResource extends Resource
 {
@@ -129,8 +130,9 @@ class AlertaDocumentoResource extends Resource
         }
 
         return $user->can('alerta-documento.update-own')
-            && $user->hasRole('responsable')
-            && $record->responsable_user_id === $user->id;
+            && $user->hasAnyRole(['responsable', 'auxiliar_responsable'])
+            && ($record->responsable_user_id === $user->id
+                || FlotaScope::vehiculosUsuario()->whereKey($record->vehiculo_id)->exists());
     }
 
     public static function canDelete(Model $record): bool
@@ -150,6 +152,10 @@ class AlertaDocumentoResource extends Resource
 
         if ($user->hasRole('admin') || $user->hasRole('activos')) {
             return $query;
+        }
+
+        if ($user->hasRole('auxiliar_responsable')) {
+            return $query->whereIn('vehiculo_id', FlotaScope::idsVehiculosUsuario());
         }
 
         if ($user->hasRole('responsable')) {

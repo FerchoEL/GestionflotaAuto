@@ -59,6 +59,7 @@ use App\Models\VehiculoFondeoConfig;
 use App\Models\VehiculoLocalidad;
 use App\Models\VehiculoResponsable;
 use App\Models\VehiculoTarjeta;
+use App\Support\FlotaScope;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
 use Spatie\Permission\Models\Role;
@@ -330,7 +331,9 @@ class Sidebar extends Component
 
         $query = AlertaRendimiento::query()->where('estatus', 'Abierta');
 
-        if ($user->hasRole('responsable')) {
+        if ($user->hasRole('auxiliar_responsable')) {
+            $query->whereIn('vehiculo_id', FlotaScope::idsVehiculosUsuario());
+        } elseif ($user->hasRole('responsable')) {
             $query->where('responsable_user_id', $user->id);
         }
 
