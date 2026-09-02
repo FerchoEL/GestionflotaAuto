@@ -188,6 +188,7 @@ class Sidebar extends Component
                         $this->resourceItem('Asig. Litros de Fondeo', 'heroicon-o-banknotes', VehiculoFondeoConfigResource::class, VehiculoFondeoConfig::class),
                         $this->resourceItem('Asig. Tarjeta a Vehículo', 'heroicon-o-credit-card', VehiculoTarjetaResource::class, VehiculoTarjeta::class),
                         $this->resourceItem('Asig. Responsables a Vehículo', 'heroicon-o-shield-check', VehiculoResponsableResource::class, VehiculoResponsable::class),
+                        $this->resourceItem('Responsables y auxiliares', 'heroicon-o-user-group', \App\Filament\Resources\ResponsableAuxiliarResource::class, \App\Models\ResponsableAuxiliar::class),
                         $this->resourceItem('Asig. Vehículo a Operador', 'heroicon-o-user', VehiculoChoferResource::class, VehiculoChofer::class),
                         $this->resourceItem('Asig. Vehículo a Localidad', 'heroicon-o-map', VehiculoLocalidadResource::class, VehiculoLocalidad::class),
                         $this->resourceItem('Asig. Vehículo a Departamento', 'heroicon-o-building-office', VehiculoDepartamentoResource::class, VehiculoDepartamento::class),

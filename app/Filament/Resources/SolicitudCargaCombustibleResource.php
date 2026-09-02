@@ -42,7 +42,15 @@ class SolicitudCargaCombustibleResource extends Resource
 
     public static function canEdit(\Illuminate\Database\Eloquent\Model $record): bool
     {
-        return auth()->user()?->can('solicitud-carga-combustible.update') ?? false;
+        return static::canUpdateSolicitud();
+    }
+
+    public static function canUpdateSolicitud(): bool
+    {
+        $user = auth()->user();
+
+        return ($user?->can('solicitud-carga-combustible.update') ?? false)
+            || ($user?->hasAnyRole(['responsable', 'auxiliar_responsable']) ?? false);
     }
 
     public static function canDelete($record): bool
@@ -181,9 +189,9 @@ class SolicitudCargaCombustibleResource extends Resource
                     ->label('Usar sugerida')
                     ->icon('heroicon-o-light-bulb')
                     ->visible(fn ($record) =>
-                        (auth()->user()?->can('solicitud-carga-combustible.update') ?? false)
+                        static::canUpdateSolicitud()
                         && filled($record?->vehiculo?->cuentaAnaliticaActiva?->cuenta_analitica_id))
-                    ->authorize(fn () => auth()->user()?->can('solicitud-carga-combustible.update') ?? false)
+                    ->authorize(fn () => static::canUpdateSolicitud())
                     ->action(function ($record) {
                         $sugerida = $record?->vehiculo?->cuentaAnaliticaActiva?->cuenta_analitica_id;
 
