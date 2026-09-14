@@ -6,6 +6,7 @@ use App\Models\CargaCombustible;
 use App\Models\CuentaAnalitica;
 use App\Models\Vehiculo;
 use App\Services\RendimientoService;
+use App\Services\ResolverCuentaAnaliticaCarga;
 use App\Services\TarjetaMovimientoService;
 use App\Support\FlotaScope;
 use Filament\Forms;
@@ -198,6 +199,13 @@ class RegistrarCargaExtemporanea extends Page implements HasForms
 
             return;
         }
+
+        $data['cuenta_analitica_id'] = app(ResolverCuentaAnaliticaCarga::class)
+            ->resolver(
+                Auth::user(),
+                $vehiculo,
+                $data['cuenta_analitica_id'] ?? null,
+            );
 
         if (! FlotaScope::vehiculosUsuario()->whereKey($vehiculo->id)->exists()) {
             Notification::make()

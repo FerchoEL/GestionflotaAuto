@@ -33,8 +33,7 @@ class CargaCombustibleResource extends Resource
     {
         $user = Auth::user();
 
-        return $user?->hasRole('chofer')
-            && ! $user?->hasAnyRole(['admin', 'responsable', 'auxiliar_responsable', 'activos']);
+        return $user?->esChoferEstricto() ?? false;
     }
 
     public static function form(Form $form): Form

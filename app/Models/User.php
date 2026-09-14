@@ -66,6 +66,13 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
+
+    public function esChoferEstricto(): bool
+    {
+        return $this->hasRole('chofer')
+            && ! $this->hasAnyRole(['admin', 'responsable', 'auxiliar_responsable', 'activos']);
+    }
+
     public function vehiculosComoChofer()
     {
         return $this->hasMany(VehiculoChofer::class, 'chofer_user_id');

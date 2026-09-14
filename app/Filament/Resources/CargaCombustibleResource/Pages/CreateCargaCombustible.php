@@ -6,6 +6,7 @@ use App\Filament\Resources\CargaCombustibleResource;
 use App\Models\Vehiculo;
 use App\Models\CargaCombustible;
 use App\Services\RendimientoService;
+use App\Services\ResolverCuentaAnaliticaCarga;
 use App\Services\TarjetaMovimientoService;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\CreateRecord;
@@ -38,6 +39,13 @@ class CreateCargaCombustible extends CreateRecord
 
             $this->halt();
         }
+
+        $data['cuenta_analitica_id'] = app(ResolverCuentaAnaliticaCarga::class)
+            ->resolver(
+                Auth::user(),
+                $vehiculo,
+                $data['cuenta_analitica_id'] ?? null,
+            );
 
         if (! $vehiculo->responsables()->where('activo', true)->exists()) {
 
