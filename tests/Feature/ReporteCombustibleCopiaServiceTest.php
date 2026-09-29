@@ -8,6 +8,10 @@ use App\Models\Vehiculo;
 use App\Services\ReporteCombustibleCopiaService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Maatwebsite\Excel\Excel as ExcelWriter;
+use Maatwebsite\Excel\Facades\Excel;
+use PhpOffice\PhpSpreadsheet\Cell\DataType;
+use PhpOffice\PhpSpreadsheet\IOFactory;
 use Tests\TestCase;
 
 class ReporteCombustibleCopiaServiceTest extends TestCase
@@ -40,7 +44,7 @@ class ReporteCombustibleCopiaServiceTest extends TestCase
             'activo' => true,
         ]);
         $tarjetaId = DB::table('tarjeta_combustibles')->insertGetId([
-            'numero' => '123456',
+            'numero' => '5063542400257899',
             'activo' => true,
             'created_at' => now(),
             'updated_at' => now(),
@@ -88,7 +92,7 @@ class ReporteCombustibleCopiaServiceTest extends TestCase
         $this->assertSame('7.15', number_format($resumen->rendimiento_real, 2, '.', ''));
         $this->assertSame('10000', (string) $resumen->odometro_inicial);
         $this->assertSame('10665', (string) $resumen->odometro_final);
-        $this->assertSame('123456', (string) $resumen->tarjeta);
+        $this->assertSame('5063542400257899', (string) $resumen->tarjeta);
 
         $exportRows = (new ReporteCombustibleCopiaExport($filters))->collection();
         $this->assertCount(2, $exportRows);
@@ -100,5 +104,27 @@ class ReporteCombustibleCopiaServiceTest extends TestCase
         $detailExport = new ReporteCombustibleCopiaExport($detailFilters);
         $this->assertCount(4, $detailExport->collection());
         $this->assertSame('Odometro Anterior', $detailExport->headings()[11]);
+
+        $this->assertExportedCardIsTextAndNumericColumnsRemainNumeric($filters, 'I');
+        $this->assertExportedCardIsTextAndNumericColumnsRemainNumeric($detailFilters, 'J');
+    }
+
+    private function assertExportedCardIsTextAndNumericColumnsRemainNumeric(array $filters, string $cardColumn): void
+    {
+        $path = tempnam(sys_get_temp_dir(), 'reporte-combustible-');
+        file_put_contents($path, Excel::raw(new ReporteCombustibleCopiaExport($filters), ExcelWriter::XLSX));
+
+        try {
+            $sheet = IOFactory::load($path)->getActiveSheet();
+
+            $this->assertSame('5063542400257899', $sheet->getCell($cardColumn . '2')->getValue());
+            $this->assertSame(DataType::TYPE_STRING, $sheet->getCell($cardColumn . '2')->getDataType());
+
+            $numericColumn = $filters['vehiculo'] ? 'O' : 'N';
+            $this->assertIsNumeric($sheet->getCell($numericColumn . '2')->getValue());
+            $this->assertSame(DataType::TYPE_NUMERIC, $sheet->getCell($numericColumn . '2')->getDataType());
+        } finally {
+            unlink($path);
+        }
     }
 }

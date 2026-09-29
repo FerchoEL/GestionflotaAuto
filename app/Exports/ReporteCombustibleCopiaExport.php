@@ -3,10 +3,14 @@
 namespace App\Exports;
 
 use App\Services\ReporteCombustibleCopiaService;
+use Maatwebsite\Excel\Concerns\WithCustomValueBinder;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
+use Maatwebsite\Excel\DefaultValueBinder;
+use PhpOffice\PhpSpreadsheet\Cell\Cell;
+use PhpOffice\PhpSpreadsheet\Cell\DataType;
 
-class ReporteCombustibleCopiaExport implements FromCollection, WithHeadings
+class ReporteCombustibleCopiaExport extends DefaultValueBinder implements FromCollection, WithHeadings, WithCustomValueBinder
 {
     protected array $filters;
 
@@ -68,6 +72,19 @@ class ReporteCombustibleCopiaExport implements FromCollection, WithHeadings
                 'Rendimiento Optimo',
                 'Importe',
             ];
+    }
+
+    public function bindValue(Cell $cell, $value): bool
+    {
+        $tarjetaColumn = ($this->filters['vehiculo'] ?? null) ? 'J' : 'I';
+
+        if ($cell->getColumn() === $tarjetaColumn && $value !== null && $value !== '') {
+            $cell->setValueExplicit((string) $value, DataType::TYPE_STRING);
+
+            return true;
+        }
+
+        return parent::bindValue($cell, $value);
     }
 
     private function coleccionResumen($datos, object $totales)
