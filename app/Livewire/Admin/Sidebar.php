@@ -9,6 +9,7 @@ use App\Filament\Pages\RegistrarCargaExtemporanea;
 use App\Filament\Pages\ReporteCombustible;
 use App\Filament\Pages\ReporteCombustibleCopia;
 use App\Filament\Pages\ReporteDocumentos;
+use App\Filament\Pages\ReporteTarjetasCombustible;
 use App\Filament\Resources\AlertaDocumentoResource;
 use App\Filament\Resources\AlertaRendimientoResource;
 use App\Filament\Resources\AseguradoraResource;
@@ -108,6 +109,7 @@ class Sidebar extends Component
                     $this->buildSection('Reportes', 'heroicon-o-chart-bar', [
                         
                         $this->pageItem('Reporte Combustible', 'heroicon-o-presentation-chart-line', ReporteCombustibleCopia::class),
+                        $this->pageItem('Reporte de tarjetas de combustible', 'heroicon-o-credit-card', ReporteTarjetasCombustible::class),
                     ]),
                     
                 ],
