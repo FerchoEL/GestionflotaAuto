@@ -6,11 +6,12 @@ use App\Services\ReporteCombustibleCopiaService;
 use Maatwebsite\Excel\Concerns\WithCustomValueBinder;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
+use Maatwebsite\Excel\Concerns\WithStrictNullComparison;
 use Maatwebsite\Excel\DefaultValueBinder;
 use PhpOffice\PhpSpreadsheet\Cell\Cell;
 use PhpOffice\PhpSpreadsheet\Cell\DataType;
 
-class ReporteCombustibleCopiaExport extends DefaultValueBinder implements FromCollection, WithHeadings, WithCustomValueBinder
+class ReporteCombustibleCopiaExport extends DefaultValueBinder implements FromCollection, WithHeadings, WithCustomValueBinder, WithStrictNullComparison
 {
     protected array $filters;
 
@@ -25,14 +26,14 @@ class ReporteCombustibleCopiaExport extends DefaultValueBinder implements FromCo
         $totales = $service->totalesReporte($this->filters);
         $datos = $service->datosReporte($this->filters);
 
-        return ($this->filters['vehiculo'] ?? null)
+        return $this->esDetalle()
             ? $this->coleccionDetalle($datos, $totales)
             : $this->coleccionResumen($datos, $totales);
     }
 
     public function headings(): array
     {
-        return ($this->filters['vehiculo'] ?? null)
+        return $this->esDetalle()
             ? [
                 'Numero Economico',
                 'Placa',
@@ -76,7 +77,7 @@ class ReporteCombustibleCopiaExport extends DefaultValueBinder implements FromCo
 
     public function bindValue(Cell $cell, $value): bool
     {
-        $tarjetaColumn = ($this->filters['vehiculo'] ?? null) ? 'J' : 'I';
+        $tarjetaColumn = $this->esDetalle() ? 'J' : 'I';
 
         if ($cell->getColumn() === $tarjetaColumn && $value !== null && $value !== '') {
             $cell->setValueExplicit((string) $value, DataType::TYPE_STRING);
@@ -85,6 +86,11 @@ class ReporteCombustibleCopiaExport extends DefaultValueBinder implements FromCo
         }
 
         return parent::bindValue($cell, $value);
+    }
+
+    private function esDetalle(): bool
+    {
+        return ! ($this->filters['flota_total'] ?? false) && ! empty($this->filters['vehiculo']);
     }
 
     private function coleccionResumen($datos, object $totales)

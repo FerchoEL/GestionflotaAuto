@@ -107,6 +107,97 @@ class ReporteCombustibleCopiaServiceTest extends TestCase
 
         $this->assertExportedCardIsTextAndNumericColumnsRemainNumeric($filters, 'I');
         $this->assertExportedCardIsTextAndNumericColumnsRemainNumeric($detailFilters, 'J');
+
+        $sinCapturas = $vehiculo->replicate();
+        $sinCapturas->placas = 'SIN-CARGAS';
+        $sinCapturas->tipo_combustible = 'diesel';
+        $sinCapturas->save();
+        $inactivo = $vehiculo->replicate();
+        $inactivo->placas = 'INACTIVO';
+        $inactivo->activo = false;
+        $inactivo->save();
+
+        $flotaFilters = array_merge($filters, ['flota_total' => true]);
+        $flota = $service->datosReporte($flotaFilters);
+        $this->assertCount(3, $flota);
+        $this->assertEquals($resumen, $flota->first());
+        $sinRegistro = $flota->firstWhere('vehiculo_id', $sinCapturas->id);
+        $this->assertSame(0, $sinRegistro->litros_cargados);
+        $this->assertSame(0, $sinRegistro->km_recorridos);
+        $this->assertSame(0, $sinRegistro->importe);
+        $this->assertNull($sinRegistro->rendimiento_real);
+        $this->assertNull($sinRegistro->odometro_inicial);
+        $this->assertNull($sinRegistro->odometro_final);
+        $this->assertCount(1, $service->datosReporte($filters));
+
+        $flotaExport = new ReporteCombustibleCopiaExport($flotaFilters);
+        $this->assertSame((new ReporteCombustibleCopiaExport($filters))->headings(), $flotaExport->headings());
+        $this->assertCount(4, $flotaExport->collection());
+        $this->assertSame($exportRows->last(), $flotaExport->collection()->last());
+        $this->assertExportedCardIsTextAndNumericColumnsRemainNumeric($flotaFilters, 'I');
+
+        $seleccion = new ReporteCombustibleCopiaExport(array_merge($flotaFilters, ['vehiculo' => $sinCapturas->id]));
+        $this->assertCount(16, $seleccion->headings());
+        $this->assertCount(2, $seleccion->collection());
+        $this->assertSame('SIN-CARGAS', $seleccion->collection()->first()[1]);
+        $path = tempnam(sys_get_temp_dir(), 'flota-total-');
+        file_put_contents($path, Excel::raw($seleccion, ExcelWriter::XLSX));
+        try {
+            $sheet = IOFactory::load($path)->getActiveSheet();
+            $this->assertSame('P', $sheet->getHighestColumn());
+            foreach (['L2', 'M2', 'P2'] as $cell) {
+                $this->assertSame(0, $sheet->getCell($cell)->getValue());
+                $this->assertSame(DataType::TYPE_NUMERIC, $sheet->getCell($cell)->getDataType());
+            }
+            foreach (['J2', 'K2', 'N2'] as $cell) {
+                $this->assertNull($sheet->getCell($cell)->getValue());
+            }
+        } finally {
+            unlink($path);
+        }
+
+        $fueraPeriodo = $service->datosReporte(array_merge($flotaFilters, ['inicio' => '2026-08-01', 'fin' => '2026-08-31']));
+        $this->assertCount(3, $fueraPeriodo);
+        $this->assertSame(0, $fueraPeriodo->sum('importe'));
+        $this->assertNull($fueraPeriodo->firstWhere('vehiculo_id', $vehiculo->id)->rendimiento_real);
+        $this->assertSame([$sinCapturas->id], $service->datosReporte(array_merge($flotaFilters, ['tipo_combustible' => 'diesel']))->pluck('vehiculo_id')->all());
+        foreach (['departamento', 'localidad', 'cuenta'] as $filtro) {
+            $this->assertCount(0, $service->datosReporte(array_merge($flotaFilters, [$filtro => 999999])));
+        }
+
+        $cuentaId = DB::table('cuenta_analiticas')->insertGetId([
+            'nombre' => 'Cuenta sin capturas', 'activo' => true,
+        ]);
+        DB::table('vehiculo_cuenta_analiticas')->insert([
+            'vehiculo_id' => $sinCapturas->id, 'cuenta_analitica_id' => $cuentaId,
+            'fecha_inicio' => '2026-01-01', 'activo' => true,
+        ]);
+        $this->assertSame([$sinCapturas->id], $service->datosReporte(array_merge($flotaFilters, ['cuenta' => $cuentaId]))->pluck('vehiculo_id')->all());
+
+        // Una unidad sin cargas tampoco debe eludir el alcance del usuario.
+        $this->actingAs($user);
+        $this->assertCount(0, $service->datosReporte($flotaFilters));
+        \Spatie\Permission\Models\Role::findOrCreate('responsable', 'web');
+        $user->assignRole('responsable');
+        DB::table('vehiculo_responsables')->insert([
+            'vehiculo_id' => $sinCapturas->id, 'responsable_user_id' => $user->id,
+            'fecha_inicio' => '2026-01-01', 'activo' => true,
+        ]);
+        $this->assertSame([$sinCapturas->id], $service->datosReporte($flotaFilters)->pluck('vehiculo_id')->all());
+        \Spatie\Permission\Models\Role::findOrCreate('admin', 'web');
+        $user->assignRole('admin');
+        $this->assertCount(3, $service->datosReporte($flotaFilters));
+    }
+
+    public function test_exportar_flota_total_requiere_permiso(): void
+    {
+        $this->actingAs(User::factory()->create());
+        try {
+            (new \App\Filament\Pages\ReporteCombustibleCopia)->exportarFlotaTotal();
+            $this->fail('La exportación debe exigir permiso.');
+        } catch (\Symfony\Component\HttpKernel\Exception\HttpException $exception) {
+            $this->assertSame(403, $exception->getStatusCode());
+        }
     }
 
     private function assertExportedCardIsTextAndNumericColumnsRemainNumeric(array $filters, string $cardColumn): void

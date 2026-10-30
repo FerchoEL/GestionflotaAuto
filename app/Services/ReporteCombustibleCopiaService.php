@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\CargaCombustible;
+use App\Models\Vehiculo;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
@@ -184,9 +185,66 @@ class ReporteCombustibleCopiaService
     {
         $filters = $this->normalizarFiltros($filters);
 
+        if ($filters['flota_total'] ?? false) {
+            return $this->resumenFlotaTotal($filters);
+        }
+
         return $filters['vehiculo']
             ? $this->cargasConRendimientoReal($filters)
             : $this->resumenVehiculos($filters);
+    }
+
+    public function resumenFlotaTotal(array $filters): Collection
+    {
+        $filters = $this->normalizarFiltros($filters);
+        $resumen = $this->resumenVehiculos($filters);
+        $vehiculos = Vehiculo::query()
+            ->with([
+                'marcaVehiculo', 'choferes.chofer', 'responsableActivo.responsable',
+                'localidadActiva.localidad', 'tarjetaActiva.tarjeta', 'departamentoActivo.departamento',
+            ])
+            ->whereNotIn('id', $resumen->pluck('vehiculo_id')->filter());
+
+        if (auth()->check() && ! auth()->user()->hasAnyRole(['admin', 'activos', 'fondeo'])) {
+            $vehiculos->whereIn('id', FlotaScope::idsVehiculosUsuario());
+        }
+
+        if ($filters['vehiculo']) {
+            $vehiculos->where('id', $filters['vehiculo']);
+        }
+        if ($filters['tipo_combustible']) {
+            $vehiculos->where('tipo_combustible', $filters['tipo_combustible']);
+        }
+        foreach (['departamento' => 'departamentoActivo', 'localidad' => 'localidadActiva'] as $filtro => $relacion) {
+            if ($filters[$filtro]) {
+                $vehiculos->whereHas($relacion, fn ($query) => $query->where($filtro . '_id', $filters[$filtro]));
+            }
+        }
+        // Las cargas conservan su cuenta histórica; las filas sin cargas usan la asignación actual.
+        if ($filters['cuenta']) {
+            $vehiculos->whereHas('cuentaAnaliticaActiva', fn ($query) => $query->where('cuenta_analitica_id', $filters['cuenta']));
+        }
+
+        return $resumen->concat($vehiculos->orderBy('numero_economico')->orderBy('placas')->get()->map(fn (Vehiculo $vehiculo) => (object) [
+            'vehiculo_id' => $vehiculo->id,
+            'placas' => $vehiculo->placas,
+            'numero_economico' => $vehiculo->numero_economico,
+            'marca' => $vehiculo->marca,
+            'modelo' => $vehiculo->modelo,
+            'departamento' => $vehiculo->departamentoActivo?->departamento?->nombre,
+            'localidad' => $vehiculo->localidadActiva?->localidad?->nombre,
+            'usuarios_asignados' => $vehiculo->usuarios_asignados_texto,
+            'usuario_responsable' => $vehiculo->usuario_responsable_texto,
+            'tarjeta' => $vehiculo->tarjetaActiva?->tarjeta?->numero,
+            'odometro_inicial' => null,
+            'odometro_final' => null,
+            'rendimiento_optimo_km_l' => $vehiculo->rendimiento_optimo_km_l,
+            'km_recorridos' => 0,
+            'litros' => 0,
+            'litros_cargados' => 0,
+            'rendimiento_real' => null,
+            'importe' => 0,
+        ]))->values();
     }
 
     public function totalesReporte(array $filters): object

@@ -135,6 +135,24 @@ Exportar Excel
 
 </x-filament::button>
 
+@can('reporte-combustible.export')
+<x-filament::button
+wire:click="exportarFlotaTotal"
+wire:loading.attr="disabled"
+wire:target="exportarFlotaTotal"
+color="primary"
+>
+Exportar flota total
+</x-filament::button>
+
+<p class="mt-2 text-sm text-gray-500 dark:text-gray-400">
+Flota total descarga un resumen por unidad, incluidas las registradas sin capturas en el periodo
+(activas e inactivas). Respeta los filtros seleccionados y tus permisos.
+Las unidades sin capturas aparecen con KM, litros e importe en cero y odómetros y rendimiento real vacíos.
+Si filtras por cuenta analítica, para las unidades sin cargas se usa su asignación actual.
+</p>
+@endcan
+
 </div>
 
 

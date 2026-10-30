@@ -132,6 +132,16 @@ class ReporteCombustibleCopia extends Page
         );
     }
 
+    public function exportarFlotaTotal()
+    {
+        abort_unless(auth()->user()?->can('reporte-combustible.export') ?? false, 403);
+
+        return Excel::download(
+            new ReporteCombustibleCopiaExport(array_merge($this->filters(), ['flota_total' => true])),
+            'reporte_combustible_flota_total.xlsx'
+        );
+    }
+
     public static function canAccess(): bool
     {
         return auth()->user()?->can('pagina.reporte-combustible.view') ?? false;
